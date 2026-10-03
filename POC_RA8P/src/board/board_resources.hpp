@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+/* 实现按外设拆在同目录的 board_*.cpp，经 board_priv.hpp 互相调用。本头只公开 board_app_run。 */
+
 /*
  * RA8P1（R7JA8P1KSLSAJ，303 脚）应用层资源表。
  * 引脚按 EK-RA8P1 已公开的复用关系选取，自制板按同一端口接线即可。

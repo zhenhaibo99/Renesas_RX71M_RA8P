@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+/* 实现按外设拆在同目录的 board_*.cpp，经 board_priv.hpp 互相调用。本头只公开 board_app_run。 */
+
 /* RX71M (R5F571MLDxLC, 177-pin TFLGA) 与 RA8P1 数量相同的资源。
  * RX71M 的 CAN 是经典 CAN，没有 CAN FD。
  *
