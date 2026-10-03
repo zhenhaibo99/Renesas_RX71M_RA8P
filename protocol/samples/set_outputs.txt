@@ -1,3 +1,6 @@
+# 设置 GPIO。mask 为 0 表示四路全关，optional 保证这一个 0 仍被编码。
+# 对照 set_outputs：08 02 10 03 22 02 08 00。
+
 sequence: 2
 command: COMMAND_SET_OUTPUTS
 set_outputs {

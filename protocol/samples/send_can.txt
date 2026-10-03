@@ -1,3 +1,6 @@
+# 通道 1，11 位 ID 291（0x123），3 字节数据，请求 CAN FD。
+# 对照 send_can。RX71M 收到后应回答不支持，RA8P 会发送。
+
 sequence: 4
 command: COMMAND_SEND_CAN
 send_can {

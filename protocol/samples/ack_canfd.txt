@@ -1,3 +1,6 @@
+# 对 SEND_CAN 的失败应答。status 1 表示不支持，detail 必须与固件字符串一致。
+# 对照 ack。成功时 status 为 0，该字段按 proto3 省略，detail 也省略。
+
 sequence: 5
 command: COMMAND_SEND_CAN
 ack {

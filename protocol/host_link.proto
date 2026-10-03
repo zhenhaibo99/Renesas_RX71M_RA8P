@@ -1,81 +1,92 @@
 // Protocol Buffers 36.2（2026-09-17，protoc 36.2）。
-// 线格式是 proto3。取值为 0 仍有意义的字段使用 optional，这样 0 也会出现在载荷里。
+// 线格式是 proto3。取值为 0 仍有意义的控制字段使用 optional，这样 0 也会出现在载荷里。
 // 外层私有帧 HL1 不是 Protobuf，定义在 host_link.h。
+// 本文件不参与固件和上位机编译。C 与 Pascal 按这里的字段号手写编解码。
 
 syntax = "proto3";
 
 package renesas.hostlink;
 
+// 板卡种类。数值与 HL1 帧头里的板卡号相同。
 enum BoardKind {
-  BOARD_KIND_UNSPECIFIED = 0;
-  BOARD_KIND_RX71M = 1;
-  BOARD_KIND_RA8P = 2;
+  BOARD_KIND_UNSPECIFIED = 0; // 未指定。帧头里的 0 表示不限板卡。
+  BOARD_KIND_RX71M = 1;       // 经典 CAN。
+  BOARD_KIND_RA8P = 2;        // 支持 CAN FD。
 }
 
+// 上位机发给板卡的命令号。
 enum Command {
-  COMMAND_UNSPECIFIED = 0;
-  COMMAND_PING = 1;
-  COMMAND_SNAPSHOT = 2;
-  COMMAND_SET_OUTPUTS = 3;
-  COMMAND_SET_DAC = 4;
-  COMMAND_SET_PWM = 5;
-  COMMAND_SEND_CAN = 6;
+  COMMAND_UNSPECIFIED = 0; // 不作为请求。
+  COMMAND_PING = 1;        // 探活，板卡回 Snapshot。
+  COMMAND_SNAPSHOT = 2;    // 读状态，板卡回 Snapshot。
+  COMMAND_SET_OUTPUTS = 3; // 写四路 GPIO，回 Ack。
+  COMMAND_SET_DAC = 4;     // 写 DAC，回 Ack。
+  COMMAND_SET_PWM = 5;     // 写一路 PWM，回 Ack。
+  COMMAND_SEND_CAN = 6;    // 发一帧 CAN，回 Ack；成功后再另发 CanLog。
 }
 
+// 板卡状态。数值为 0 时按 proto3 省略。
 message Snapshot {
-  uint32 tick = 1;
-  uint32 adc0 = 2;
-  uint32 adc1 = 3;
-  uint32 inputs = 4;
-  uint32 outputs = 5;
-  uint32 dac = 6;
-  BoardKind board = 7;
-  bool can_fd = 8;
-  string name = 9;
+  uint32 tick = 1;       // 周期计数，约每 500 ms 加 1。
+  uint32 adc0 = 2;       // 第一路 AD。
+  uint32 adc1 = 3;       // 第二路 AD。
+  uint32 inputs = 4;     // GPIO 输入，bit0–bit3。
+  uint32 outputs = 5;    // GPIO 输出，bit0–bit3。
+  uint32 dac = 6;        // 当前 DAC 码，0–4095。
+  BoardKind board = 7;   // 回复来自哪块板。
+  bool can_fd = 8;       // 该板能否发 CAN FD。RX 省略，RA 为 true。
+  string name = 9;       // "RX71M" 或 "RA8P1"。
 }
 
+// 四路输出。mask 为 0 表示全关，仍然必须编码。
 message SetOutputs {
-  optional uint32 mask = 1;
+  optional uint32 mask = 1; // bit0–bit3，合法范围 0–15。
 }
 
+// 12 位 DAC。code 为 0 仍然必须编码。
 message SetDac {
-  optional uint32 code = 1;
+  optional uint32 code = 1; // 0–4095。
 }
 
+// 一路 PWM。通道和占空比即使是 0 也必须编码。
 message SetPwm {
-  optional uint32 channel = 1;
-  optional uint32 duty_permille = 2;
+  optional uint32 channel = 1;        // 0–3。
+  optional uint32 duty_permille = 2;  // 千分比，0–1000。500 表示 50%。
 }
 
+// 上位机请求板卡发送的 CAN 帧。本协议只做 1–8 字节、11 位标准 ID。
 message SendCan {
-  optional uint32 channel = 1;
-  optional uint32 id = 2;
-  bytes data = 3;
-  optional bool fd = 4;
+  optional uint32 channel = 1; // 0 或 1。0 也要编码。
+  optional uint32 id = 2;      // 0–0x7FF。
+  bytes data = 3;              // 1–8 字节。空数据视为参数错误。
+  optional bool fd = 4;        // false 经典 CAN，true CAN FD。两种都编码。
 }
 
+// 板卡上报已经发出的 CAN。字段号与 SendCan 相同，并多一个 tx。
 message CanLog {
-  optional uint32 channel = 1;
-  optional uint32 id = 2;
-  bytes data = 3;
-  optional bool fd = 4;
-  optional bool tx = 5;
+  optional uint32 channel = 1; // 0 或 1。
+  optional uint32 id = 2;      // 11 位标准 ID。
+  bytes data = 3;              // 1–8 字节。
+  optional bool fd = 4;        // 该帧是否为 CAN FD。
+  optional bool tx = 5;        // true 表示板卡发出。当前上报都是发送。
 }
 
+// 写操作的应答。status 为 0 时省略该字段。detail 成功时省略。
 message Ack {
-  Command command = 1;
-  uint32 status = 2;
-  string detail = 3;
+  Command command = 1; // 被应答的命令号。
+  uint32 status = 2;   // 0 成功，1 不支持，2 参数错误。
+  string detail = 3;   // ASCII 原因，例如 "can fd unsupported"。
 }
 
+// 一帧 HL1 的载荷。可以同时带 ack 与 snapshot，或只带其中之一。
 message Envelope {
-  uint32 sequence = 1;
-  Command command = 2;
-  Snapshot snapshot = 3;
+  uint32 sequence = 1;       // 非 0 才编码。PC 从 1 递增；板卡主动上报从 0x80000000 递增。
+  Command command = 2;       // 非 0 才编码。
+  Snapshot snapshot = 3;     // 状态应答或周期上报。
   SetOutputs set_outputs = 4;
   SetDac set_dac = 5;
   SetPwm set_pwm = 6;
-  SendCan send_can = 7;
-  CanLog can_log = 8;
-  Ack ack = 9;
+  SendCan send_can = 7;      // PC 请求发 CAN。
+  CanLog can_log = 8;        // 板卡上报已发送的 CAN。
+  Ack ack = 9;               // 写操作应答。
 }

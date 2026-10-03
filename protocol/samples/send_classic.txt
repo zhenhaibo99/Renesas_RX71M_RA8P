@@ -1,3 +1,6 @@
+# 通道 0，同一 ID 291，1 字节数据。fd 明确写 false，经典 CAN 也要编码该字段。
+# 对照 classic。
+
 sequence: 7
 command: COMMAND_SEND_CAN
 send_can {

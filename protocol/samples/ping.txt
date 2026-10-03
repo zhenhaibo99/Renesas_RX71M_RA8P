@@ -1,2 +1,5 @@
+# 序号 1 的探活。对照 selftest.c 的 ping：08 01 10 01。
+# command 为 0 时不会出现在线上，所以这里必须写 COMMAND_PING。
+
 sequence: 1
 command: COMMAND_PING

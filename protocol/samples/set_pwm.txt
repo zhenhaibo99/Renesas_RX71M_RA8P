@@ -1,3 +1,6 @@
+# PWM 通道 0、占空比 0。两个 0 都要出现在线上。
+# 对照 set_pwm：08 06 10 05 32 04 08 00 10 00。
+
 sequence: 6
 command: COMMAND_SET_PWM
 set_pwm {

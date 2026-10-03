@@ -1,3 +1,6 @@
+# RA8P 状态。adc0 为 4095，名字 RA8P1，can_fd 为 true。
+# 对照 snapshot。RX 的 can_fd 为 false 时，这一字段会从线上省略。
+
 sequence: 3
 command: COMMAND_SNAPSHOT
 snapshot {
