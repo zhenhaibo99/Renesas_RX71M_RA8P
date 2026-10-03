@@ -12,16 +12,11 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+extern void board_app_run(void);
+
 void main_task(void *pvParameters)
 {
-
-    /* Create all other application tasks here */
-
-    /* WAIT_LOOP */
-    while(1) {
-        vTaskDelay(10000);
-    }
-
+    (void) pvParameters;
+    board_app_run();
     vTaskDelete(NULL);
-
 }

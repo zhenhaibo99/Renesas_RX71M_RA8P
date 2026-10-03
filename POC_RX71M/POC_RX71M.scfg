@@ -204,11 +204,11 @@
             <item enabled="false" id="comboBox1-1"/>
             <item enabled="true" id="comboBox1-2"/>
         </option>
-        <option enabled="true" id="uckenable" selection="uncheck">
+        <option enabled="true" id="uckenable" selection="check">
             <item enabled="true" id="check"/>
             <item enabled="true" id="uncheck"/>
         </option>
-        <option enabled="false" id="uckdivider" selection="comboBox1-5">
+        <option enabled="true" id="uckdivider" selection="comboBox1-5">
             <item enabled="false" id="comboBox1-2"/>
             <item enabled="false" id="comboBox1-3"/>
             <item enabled="false" id="comboBox1-4"/>
@@ -245,7 +245,7 @@
         <option enabled="false" id="sdclk" selection="textoutputitem">
             <item enabled="true" id="textoutputitem" input="" value="120.0"/>
         </option>
-        <option enabled="false" id="uclk" selection="textoutputitem">
+        <option enabled="true" id="uclk" selection="textoutputitem">
             <item enabled="true" id="textoutputitem" input="" value="48.0"/>
         </option>
         <option enabled="false" id="caclclk" selection="textoutputitem">

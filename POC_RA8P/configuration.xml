@@ -365,8 +365,8 @@
     <node id="board.clock.spiclk.source" option="board.clock.spiclk.source.disabled"/>
     <node id="board.clock.spiclk.div" option="board.clock.spiclk.div.1"/>
     <node id="board.clock.spiclk.display" option="board.clock.spiclk.display.value"/>
-    <node id="board.clock.canfdclk.source" option="board.clock.canfdclk.source.disabled"/>
-    <node id="board.clock.canfdclk.div" option="board.clock.canfdclk.div.6"/>
+    <node id="board.clock.canfdclk.source" option="board.clock.canfdclk.source.hoco"/>
+    <node id="board.clock.canfdclk.div" option="board.clock.canfdclk.div.1"/>
     <node id="board.clock.canfdclk.display" option="board.clock.canfdclk.display.value"/>
     <node id="board.clock.gptclk.source" option="board.clock.gptclk.source.disabled"/>
     <node id="board.clock.gptclk.div" option="board.clock.gptclk.div.2"/>
@@ -379,8 +379,8 @@
     <node id="board.clock.i3cclk.source" option="board.clock.i3cclk.source.disabled"/>
     <node id="board.clock.i3cclk.div" option="board.clock.i3cclk.div.4"/>
     <node id="board.clock.i3cclk.display" option="board.clock.i3cclk.display.value"/>
-    <node id="board.clock.uck.source" option="board.clock.uck.source.disabled"/>
-    <node id="board.clock.uck.div" option="board.clock.uck.div.10"/>
+    <node id="board.clock.uck.source" option="board.clock.uck.source.hoco"/>
+    <node id="board.clock.uck.div" option="board.clock.uck.div.1"/>
     <node id="board.clock.uck.display" option="board.clock.uck.display.value"/>
     <node id="board.clock.u60ck.source" option="board.clock.u60ck.source.disabled"/>
     <node id="board.clock.u60ck.div" option="board.clock.u60ck.div.8"/>
@@ -466,7 +466,7 @@
     <context id="rtos.awsfreertos.thread.0">
       <property id="_symbol" value="new_thread0"/>
       <property id="rtos.awsfreertos.thread.name" value="New Thread"/>
-      <property id="rtos.awsfreertos.thread.stack" value="1024"/>
+      <property id="rtos.awsfreertos.thread.stack" value="4096"/>
       <property id="rtos.awsfreertos.thread.priority" value="1"/>
     </context>
     <config id="config.awsfreertos.thread">

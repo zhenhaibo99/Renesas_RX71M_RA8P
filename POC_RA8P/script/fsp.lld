@@ -4,3 +4,13 @@
 
 INCLUDE memory_regions.lld
 INCLUDE fsp_gen.lld
+
+/* ATfE libcrt0 / libc 使用的符号。FSP 链接脚本用的是 __ram_from_flash$$ 这一套名字。 */
+PROVIDE(__data_start = __ram_from_flash$$Base);
+PROVIDE(__data_source = __ram_from_flash$$Load);
+PROVIDE(__data_size = __ram_from_flash$$Limit - __ram_from_flash$$Base);
+PROVIDE(__bss_start = __ram_zero$$Base);
+PROVIDE(__bss_size = __ram_zero$$Limit - __ram_zero$$Base);
+/* 主栈顶与 startup.c 中向量表一致：g_main_stack + BSP_CFG_STACK_MAIN_BYTES(0x400)。 */
+PROVIDE(__stack = g_main_stack + 0x400);
+PROVIDE(__stack_limit = g_main_stack);

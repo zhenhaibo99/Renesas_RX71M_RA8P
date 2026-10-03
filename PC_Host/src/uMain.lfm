@@ -1,0 +1,151 @@
+object MainForm: TMainForm
+  Left = 152
+  Height = 1111
+  Top = 292
+  Width = 1920
+  Caption = 'PC 上位机 — RX71M / RA8P'
+  ClientHeight = 1111
+  ClientWidth = 1920
+  Constraints.MinHeight = 600
+  Constraints.MinWidth = 900
+  DesignTimePPI = 120
+  Position = poScreenCenter
+  LCLVersion = '4.8.0.0'
+  OnShow = FormShow
+  object pnlTop: TPanel
+    Left = 0
+    Height = 90
+    Top = 0
+    Width = 1920
+    Align = alTop
+    BevelOuter = bvNone
+    ClientHeight = 90
+    ClientWidth = 1920
+    TabOrder = 0
+    object lblTitle: TLabel
+      Left = 20
+      Height = 20
+      Top = 18
+      Width = 98
+      Caption = 'PC 上位机模板'
+      ParentColor = False
+    end
+    object lblSub: TLabel
+      Left = 20
+      Height = 20
+      Top = 50
+      Width = 620
+      Caption = '设计基准 96 PPI。Windows 150% 对应 144 PPI；4K 与跨屏拖动按每台显示器的 DPI 缩放。'
+      ParentColor = False
+    end
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Height = 29
+    Top = 1082
+    Width = 1920
+    Panels = <    
+      item
+        Width = 375
+      end    
+      item
+        Width = 225
+      end    
+      item
+        Width = 600
+      end>
+    SimplePanel = False
+  end
+  object pnlSide: TPanel
+    Left = 0
+    Height = 992
+    Top = 90
+    Width = 340
+    Align = alLeft
+    BevelOuter = bvNone
+    ClientHeight = 992
+    ClientWidth = 340
+    TabOrder = 1
+    object grpLink: TGroupBox
+      Left = 0
+      Height = 992
+      Top = 0
+      Width = 340
+      Align = alClient
+      Caption = '通信'
+      ClientHeight = 967
+      ClientWidth = 336
+      TabOrder = 0
+      object lblChannel: TLabel
+        Left = 20
+        Height = 20
+        Top = 10
+        Width = 60
+        Caption = '通信通道'
+        ParentColor = False
+      end
+      object cmbPort: TComboBox
+        Left = 20
+        Height = 28
+        Top = 35
+        Width = 296
+        Anchors = [akTop, akLeft, akRight]
+        ItemHeight = 20
+        Items.Strings = (
+          'COM1（预留）'
+          'USB CDC（预留）'
+        )
+        Style = csDropDownList
+        TabOrder = 0
+      end
+      object lblNote: TLabel
+        Left = 20
+        Height = 90
+        Top = 831
+        Width = 296
+        Anchors = [akLeft, akRight, akBottom]
+        AutoSize = False
+        Caption = '通道和按钮只占布局。USB / 串口协议以后接到嵌入式命令层。新控件的像素用 uDpi.ScaleDesign，按 96 PPI 传入。'
+        ParentColor = False
+        WordWrap = True
+      end
+      object btnRefresh: TButton
+        Left = 20
+        Height = 35
+        Top = 926
+        Width = 130
+        Anchors = [akLeft, akBottom]
+        Caption = '刷新（预留）'
+        TabOrder = 1
+        OnClick = btnRefreshClick
+      end
+      object btnConnect: TButton
+        Left = 186
+        Height = 35
+        Top = 926
+        Width = 130
+        Anchors = [akRight, akBottom]
+        Caption = '连接（预留）'
+        TabOrder = 2
+        OnClick = btnConnectClick
+      end
+    end
+  end
+  object splMain: TSplitter
+    Left = 340
+    Height = 992
+    Top = 90
+    Width = 6
+    MinSize = 220
+  end
+  object memLog: TMemo
+    Left = 346
+    Height = 992
+    Top = 90
+    Width = 1574
+    Align = alClient
+    ReadOnly = True
+    ScrollBars = ssVertical
+    TabOrder = 2
+  end
+end
