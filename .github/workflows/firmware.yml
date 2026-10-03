@@ -1,0 +1,41 @@
+name: firmware
+
+# Firmware makefiles embed this PC's absolute paths and the Renesas toolchains.
+# Run this job on a self-hosted runner labeled "renesas", with the repository
+# checked out at the same path used when e2 studio generated the makefiles.
+# Pull requests are intentionally excluded: a self-hosted runner must not build
+# untrusted fork code.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - pcsoft
+      - main
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firmware-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  images:
+    name: host and firmware
+    runs-on: [self-hosted, Windows, X64, renesas]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Protocol, host, and both firmware configurations
+        shell: pwsh
+        run: ./ci/pipeline.ps1 -Stage all
+
+      - name: Upload images and summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ github.sha }}
+          path: ci/out/**
+          if-no-files-found: ignore

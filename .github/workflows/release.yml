@@ -1,0 +1,28 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: package tag
+    runs-on: [self-hosted, Windows, X64, renesas]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build everything that this tag will ship
+        shell: pwsh
+        run: ./ci/pipeline.ps1 -Stage all -Configuration both
+
+      - name: Upload release inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: ci/out/**
+          if-no-files-found: error
+          retention-days: 90

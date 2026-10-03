@@ -1,0 +1,18 @@
+# Extra images after the ELF link. Debug and Release makefiles include this file.
+# Intel HEX keeps each load address. BIN is the code flash image at 0x02000000
+# (vector table plus read-only flash). Option-setting bytes stay in the HEX file.
+
+secondary-outputs: POC_RA8P.hex POC_RA8P.bin
+
+POC_RA8P.hex: POC_RA8P.elf
+	llvm-objcopy "POC_RA8P.elf" -O ihex "POC_RA8P.hex"
+
+POC_RA8P.bin: POC_RA8P.elf
+	llvm-objcopy "POC_RA8P.elf" -O binary --gap-fill=255 -j '__flash_vectors$$$$' -j '__flash_readonly$$$$' "POC_RA8P.bin"
+
+clean: clean-extra-images
+
+clean-extra-images:
+	-$(RM) POC_RA8P.hex POC_RA8P.bin
+
+.PHONY: clean-extra-images
