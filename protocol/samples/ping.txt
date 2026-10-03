@@ -1,0 +1,2 @@
+sequence: 1
+command: COMMAND_PING

@@ -1,0 +1,13 @@
+sequence: 3
+command: COMMAND_SNAPSHOT
+snapshot {
+  tick: 9
+  adc0: 4095
+  adc1: 1
+  inputs: 15
+  outputs: 6
+  dac: 2048
+  board: BOARD_KIND_RA8P
+  can_fd: true
+  name: "RA8P1"
+}

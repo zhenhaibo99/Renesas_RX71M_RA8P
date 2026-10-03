@@ -35,6 +35,7 @@ Includes   <System Includes> , "Project Includes"
 #include <stdio.h>
 #include "platform.h"
 #include "r_smc_entry.h"
+#include "freertos_user_port.h"
 #include "FreeRTOS.h"
 #include "task.h"
 

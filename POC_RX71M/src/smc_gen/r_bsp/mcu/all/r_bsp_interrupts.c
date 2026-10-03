@@ -451,6 +451,10 @@ static bsp_int_err_t bsp_fit_interrupts_control(bool enable, bsp_int_ctrl_t * pd
 ***********************************************************************************************************************/
 static bsp_int_err_t bsp_gr_int_enable_disable(bsp_int_src_t vector, bool enable, uint32_t ipl)
 {
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
     bsp_int_err_t err = BSP_INT_SUCCESS;
 
 #if BSP_CFG_PARAM_CHECKING_ENABLE == 1
@@ -698,6 +702,9 @@ static bsp_int_err_t bsp_gr_int_enable_disable(bsp_int_src_t vector, bool enable
         err = BSP_INT_ERR_INVALID_ARG;
     }
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
     return err;
 } /* End of function bsp_gr_int_enable_disable() */
 #endif /* BSP_MCU_GROUP_INTERRUPT */

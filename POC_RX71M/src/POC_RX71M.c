@@ -14,6 +14,8 @@
 
 extern void board_app_run(void);
 
+void main_task(void *pvParameters);
+
 void main_task(void *pvParameters)
 {
     (void) pvParameters;

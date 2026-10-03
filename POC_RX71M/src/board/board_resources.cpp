@@ -1,5 +1,9 @@
 #include "board_resources.hpp"
 
+#include <cstring>
+
+#include "../../../protocol/host_link.c"
+
 extern "C"
 {
 #include "platform.h"
@@ -21,6 +25,9 @@ uint32_t g_tick = 0U;
 uint16_t g_adc0 = 0U;
 uint16_t g_adc1 = 0U;
 uint8_t g_inputs = 0U;
+uint8_t g_outputs = 0U;
+uint16_t g_dac = 0U;
+HlBoardLink g_link;
 
 bool wait_true(volatile const unsigned char & reg, unsigned char mask, bool set, uint32_t spins)
 {
@@ -308,18 +315,27 @@ void can_open(volatile struct st_can & can)
     (void) can_wait_reset(can, false);
 }
 
-void can_send(volatile struct st_can & can, uint16_t id, uint8_t data)
+bool can_send(volatile struct st_can & can, uint16_t id, const uint8_t *data, uint8_t dlc)
 {
+    uint8_t i;
+    if ((data == 0) || (dlc == 0U) || (dlc > 8U) || (id > 0x7FFU))
+    {
+        return false;
+    }
     if (can.MCTL[0].BIT.TX.TRMACTIVE != 0U)
     {
-        return;
+        return false;
     }
     can.MCTL[0].BYTE = 0U;
     /* 标准帧 ID 在 SID[10:0]，位于 ID 寄存器 bit28-18。直接写整字，避免 11 位位域的截断警告。 */
     can.MB[0].ID.LONG = (static_cast<unsigned long>(id) & 0x7FFUL) << 18;
-    can.MB[0].DLC = 1U;
-    can.MB[0].DATA[0] = data;
+    can.MB[0].DLC = dlc;
+    for (i = 0U; i < dlc; ++i)
+    {
+        can.MB[0].DATA[i] = data[i];
+    }
     can.MCTL[0].BYTE = 0x80U;
+    return true;
 }
 
 void pwm_open(void)
@@ -345,9 +361,12 @@ void pwm_open(void)
     MTU4.TGRC = 7500U;
     MTU4.TCNT = 0U;
 
+    MTU4.TIORL.BIT.IOD = 1U;
+    MTU4.TGRD = 3750U;
     MTU.TOERA.BIT.OE3B = 1U;
     MTU.TOERA.BIT.OE4A = 1U;
     MTU.TOERA.BIT.OE4C = 1U;
+    MTU.TOERA.BIT.OE4D = 1U;
     MTU.TSTRA.BIT.CST3 = 1U;
     MTU.TSTRA.BIT.CST4 = 1U;
 }
@@ -367,8 +386,9 @@ void adc_sample(void)
 
 void dac_write(uint16_t code)
 {
+    g_dac = static_cast<uint16_t>(code & 0x0FFFU);
     DA.DADPR.BIT.DPSEL = 1U;
-    DA.DADR0 = static_cast<unsigned short>(code & 0x0FFFU);
+    DA.DADR0 = g_dac;
     DA.DACR.BIT.DAOE0 = 1U;
 }
 
@@ -398,6 +418,8 @@ void eth_open(void)
 
 void gpio_write(uint8_t mask)
 {
+    g_outputs = static_cast<uint8_t>(mask & 0x0FU);
+    mask = g_outputs;
     PORT9.PODR.BIT.B0 = (mask & 0x01U) != 0U;
     PORT9.PODR.BIT.B1 = (mask & 0x02U) != 0U;
     PORT9.PODR.BIT.B2 = (mask & 0x04U) != 0U;
@@ -452,6 +474,122 @@ void log_line(void)
     sci_write(kLogUart, line);
 }
 
+uint16_t duty_count(uint16_t duty_permille)
+{
+    const uint32_t period = 60000U;
+    uint32_t cmp = (period * duty_permille) / 1000U;
+    if (cmp >= period)
+    {
+        cmp = period - 1U;
+    }
+    return static_cast<uint16_t>(cmp);
+}
+
+int apply_pwm(uint8_t channel, uint16_t duty_permille)
+{
+    const uint16_t cmp = duty_count(duty_permille);
+    switch (channel)
+    {
+    case 0U:
+        MTU3.TGRB = cmp;
+        break;
+    case 1U:
+        MTU4.TGRB = cmp;
+        break;
+    case 2U:
+        MTU4.TGRC = cmp;
+        break;
+    case 3U:
+        MTU4.TGRD = cmp;
+        break;
+    default:
+        return -1;
+    }
+    return 0;
+}
+
+extern "C" void rx_write(void * ctx, const uint8_t * data, uint16_t len)
+{
+    uint16_t i;
+    (void) ctx;
+    for (i = 0U; i < len; ++i)
+    {
+        sci_putc(kAppUart, data[i]);
+    }
+}
+
+extern "C" void rx_outputs(void * ctx, uint8_t mask)
+{
+    (void) ctx;
+    gpio_write(mask);
+}
+
+extern "C" void rx_dac(void * ctx, uint16_t code)
+{
+    (void) ctx;
+    dac_write(code);
+}
+
+extern "C" int rx_pwm(void * ctx, uint8_t channel, uint16_t duty)
+{
+    (void) ctx;
+    if ((channel > 3U) || (duty > 1000U))
+    {
+        return -1;
+    }
+    return apply_pwm(channel, duty);
+}
+
+extern "C" int rx_can(void * ctx, uint8_t channel, uint32_t id, const uint8_t * data, uint8_t dlc, int fd)
+{
+    (void) ctx;
+    (void) fd;
+    volatile struct st_can * can = (channel == 0U) ? &CAN0 : &CAN1;
+    return can_send(*can, static_cast<uint16_t>(id), data, dlc) ? 0 : -1;
+}
+
+extern "C" void rx_fill(void * ctx, HlEnvelope * msg)
+{
+    const char * name = "RX71M";
+    unsigned i = 0U;
+    (void) ctx;
+    msg->tick = g_tick;
+    msg->adc0 = g_adc0;
+    msg->adc1 = g_adc1;
+    msg->inputs = g_inputs;
+    msg->outputs = g_outputs;
+    msg->dac = g_dac;
+    msg->board = HL_BOARD_RX71M;
+    msg->can_fd = 0;
+    for (; (name[i] != '\0') && (i + 1U < HL_NAME_MAX); ++i)
+    {
+        msg->name[i] = name[i];
+    }
+    msg->name[i] = '\0';
+}
+
+void link_init(void)
+{
+    HlBoardOps ops;
+    std::memset(&ops, 0, sizeof ops);
+    ops.write = rx_write;
+    ops.set_outputs = rx_outputs;
+    ops.set_dac = rx_dac;
+    ops.set_pwm = rx_pwm;
+    ops.send_can = rx_can;
+    ops.fill_snapshot = rx_fill;
+    hl_board_init(&g_link, HL_BOARD_RX71M, 0, &ops);
+}
+
+void poll_link(void)
+{
+    int rx;
+    while ((rx = sci_getc(kAppUart)) >= 0)
+    {
+        hl_board_push(&g_link, static_cast<uint8_t>(rx));
+    }
+}
+
 void bringup(void)
 {
     modules_start();
@@ -468,35 +606,48 @@ void bringup(void)
     dac_write(0U);
     usb_open();
     eth_open();
+    link_init();
 }
 
 void poll(void)
 {
+    const uint8_t sample = static_cast<uint8_t>(g_tick);
     ++g_tick;
-    gpio_write(static_cast<uint8_t>(g_tick & 0x0FU));
+    if (!g_link.linked)
+    {
+        gpio_write(static_cast<uint8_t>(g_tick & 0x0FU));
+        dac_write(static_cast<uint16_t>((g_tick << 4) & 0x0FFFU));
+    }
     g_inputs = gpio_read();
     adc_sample();
-    dac_write(static_cast<uint16_t>((g_tick << 4) & 0x0FFFU));
-    (void) spi_xfer(static_cast<uint8_t>(g_tick));
-    (void) iic_write(0x50U, static_cast<uint8_t>(g_tick));
-    can_send(CAN0, 0x123U, static_cast<uint8_t>(g_tick));
-    can_send(CAN1, 0x321U, static_cast<uint8_t>(g_tick));
-    lin_break_and_sync();
-    const int rx = sci_getc(kAppUart);
-    if (rx >= 0)
+    (void) spi_xfer(sample);
+    (void) iic_write(0x50U, sample);
+    if (can_send(CAN0, 0x123U, &sample, 1U))
     {
-        sci_putc(kAppUart, static_cast<uint8_t>(rx));
+        hl_board_send_can_log(&g_link, 0U, 0x123U, &sample, 1U, 0);
     }
+    if (can_send(CAN1, 0x321U, &sample, 1U))
+    {
+        hl_board_send_can_log(&g_link, 1U, 0x321U, &sample, 1U, 0);
+    }
+    lin_break_and_sync();
+    hl_board_send_snapshot(&g_link);
     log_line();
 }
 } // namespace
 
 extern "C" void board_app_run(void)
 {
+    uint32_t phase = 0U;
     bringup();
     for (;;)
     {
-        poll();
-        vTaskDelay(pdMS_TO_TICKS(500));
+        poll_link();
+        if ((phase % 25U) == 0U)
+        {
+            poll();
+        }
+        ++phase;
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }

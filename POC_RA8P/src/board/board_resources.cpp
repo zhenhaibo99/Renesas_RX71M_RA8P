@@ -1,5 +1,9 @@
 #include "board_resources.hpp"
 
+#include <cstring>
+
+#include "../../../protocol/host_link.c"
+
 #include "bsp_api.h"
 #include "r_ioport.h"
 #include "FreeRTOS.h"
@@ -25,6 +29,10 @@ uint32_t g_tick = 0U;
 uint16_t g_adc0 = 0U;
 uint16_t g_adc1 = 0U;
 uint8_t g_inputs = 0U;
+uint8_t g_outputs = 0U;
+uint16_t g_dac = 0U;
+uint32_t g_pwm_period = 0U;
+HlBoardLink g_link;
 
 bool wait_flag(volatile const uint32_t & reg, uint32_t mask, bool set, uint32_t spins)
 {
@@ -307,17 +315,26 @@ void canfd_open(R_CANFD_Type * can)
     (void) wait_flag(can->CFDGSTS, 1UL << 0, false, 200000U);
 }
 
-void canfd_send(R_CANFD_Type * can, uint32_t id, uint8_t data)
+bool canfd_send(R_CANFD_Type * can, uint32_t id, const uint8_t * data, uint8_t dlc, bool fd)
 {
+    uint8_t i;
+    if ((data == 0) || (dlc == 0U) || (dlc > 8U) || (id > 0x7FFU))
+    {
+        return false;
+    }
     if ((can->CFDTMC[0] & 0x01U) != 0U)
     {
-        return;
+        return false;
     }
     can->CFDTM[0].ID = id << 18;
-    can->CFDTM[0].PTR = 1UL << 28;
-    can->CFDTM[0].FDCTR = 0U;
-    can->CFDTM[0].DF[0] = data;
+    can->CFDTM[0].PTR = static_cast<uint32_t>(dlc) << 28;
+    can->CFDTM[0].FDCTR = fd ? (1UL << 2) : 0U;
+    for (i = 0U; i < dlc; ++i)
+    {
+        can->CFDTM[0].DF[i] = data[i];
+    }
     can->CFDTMC[0] = 0x01U;
+    return true;
 }
 
 void gpt_start(R_GPT0_Type * gpt, uint32_t channel, uint32_t duty, bool both)
@@ -366,7 +383,8 @@ void dac_open(void)
 
 void dac_write(uint16_t code)
 {
-    R_DAC_B0->DADR = static_cast<uint16_t>(code & 0x0FFFU);
+    g_dac = static_cast<uint16_t>(code & 0x0FFFU);
+    R_DAC_B0->DADR = g_dac;
 }
 
 void usb_open(void)
@@ -387,6 +405,8 @@ void eth_open(void)
 
 void gpio_write(uint8_t mask)
 {
+    g_outputs = static_cast<uint8_t>(mask & 0x0FU);
+    mask = g_outputs;
     const bsp_io_port_pin_t pins[4] = {
         BSP_IO_PORT_03_PIN_03, BSP_IO_PORT_06_PIN_00, BSP_IO_PORT_10_PIN_07, BSP_IO_PORT_04_PIN_09};
     R_BSP_PinAccessEnable();
@@ -438,6 +458,117 @@ void log_line(void)
     sci_write(kLogUart, line);
 }
 
+int apply_pwm(uint8_t channel, uint16_t duty_permille)
+{
+    uint32_t cmp;
+    if ((g_pwm_period == 0U) || (channel > 3U) || (duty_permille > 1000U))
+    {
+        return -1;
+    }
+    cmp = (g_pwm_period * duty_permille) / 1000U;
+    if (cmp > g_pwm_period)
+    {
+        cmp = g_pwm_period;
+    }
+    switch (channel)
+    {
+    case 0U:
+        R_GPT1->GTWP = 0xA500U;
+        R_GPT1->GTCCR[0] = cmp;
+        break;
+    case 1U:
+        R_GPT1->GTWP = 0xA500U;
+        R_GPT1->GTCCR[1] = cmp;
+        break;
+    case 2U:
+        R_GPT12->GTWP = 0xA500U;
+        R_GPT12->GTCCR[0] = cmp;
+        break;
+    default:
+        R_GPT10->GTWP = 0xA500U;
+        R_GPT10->GTCCR[0] = cmp;
+        break;
+    }
+    return 0;
+}
+
+extern "C" void ra_write(void * ctx, const uint8_t * data, uint16_t len)
+{
+    uint16_t i;
+    (void) ctx;
+    for (i = 0U; i < len; ++i)
+    {
+        sci_putc(kAppUart, data[i]);
+    }
+}
+
+extern "C" void ra_outputs(void * ctx, uint8_t mask)
+{
+    (void) ctx;
+    gpio_write(mask);
+}
+
+extern "C" void ra_dac(void * ctx, uint16_t code)
+{
+    (void) ctx;
+    dac_write(code);
+}
+
+extern "C" int ra_pwm(void * ctx, uint8_t channel, uint16_t duty)
+{
+    (void) ctx;
+    return apply_pwm(channel, duty);
+}
+
+extern "C" int ra_can(void * ctx, uint8_t channel, uint32_t id, const uint8_t * data, uint8_t dlc, int fd)
+{
+    R_CANFD_Type * can = (channel == 0U) ? R_CANFD0 : R_CANFD1;
+    (void) ctx;
+    return canfd_send(can, id, data, dlc, fd != 0) ? 0 : -1;
+}
+
+extern "C" void ra_fill(void * ctx, HlEnvelope * msg)
+{
+    const char * name = "RA8P1";
+    unsigned i = 0U;
+    (void) ctx;
+    msg->tick = g_tick;
+    msg->adc0 = g_adc0;
+    msg->adc1 = g_adc1;
+    msg->inputs = g_inputs;
+    msg->outputs = g_outputs;
+    msg->dac = g_dac;
+    msg->board = HL_BOARD_RA8P;
+    msg->can_fd = 1;
+    for (; (name[i] != '\0') && (i + 1U < HL_NAME_MAX); ++i)
+    {
+        msg->name[i] = name[i];
+    }
+    msg->name[i] = '\0';
+}
+
+void link_init(void)
+{
+    HlBoardOps ops;
+    std::memset(&ops, 0, sizeof ops);
+    ops.write = ra_write;
+    ops.set_outputs = ra_outputs;
+    ops.set_dac = ra_dac;
+    ops.set_pwm = ra_pwm;
+    ops.send_can = ra_can;
+    ops.fill_snapshot = ra_fill;
+    hl_board_init(&g_link, HL_BOARD_RA8P, 1, &ops);
+}
+
+void poll_link(void)
+{
+    int rx;
+    while ((rx = sci_getc(kAppUart)) >= 0)
+    {
+        hl_board_push(&g_link, static_cast<uint8_t>(rx));
+    }
+}
+
 void bringup(void)
 {
     pins_apply();
@@ -451,6 +582,7 @@ void bringup(void)
     canfd_open(R_CANFD0);
     canfd_open(R_CANFD1);
     const uint32_t period = (kPclkdHz / kPwmHz) - 1U;
+    g_pwm_period = period;
     gpt_start(R_GPT1, 1U, period / 2U, true);
     gpt_start(R_GPT12, 12U, period / 4U, false);
     gpt_start(R_GPT10, 10U, period / 8U, false);
@@ -458,35 +590,48 @@ void bringup(void)
     dac_open();
     usb_open();
     eth_open();
+    link_init();
 }
 
 void poll(void)
 {
+    const uint8_t sample = static_cast<uint8_t>(g_tick);
     ++g_tick;
-    gpio_write(static_cast<uint8_t>(g_tick & 0x0FU));
+    if (!g_link.linked)
+    {
+        gpio_write(static_cast<uint8_t>(g_tick & 0x0FU));
+        dac_write(static_cast<uint16_t>((g_tick << 4) & 0x0FFFU));
+    }
     g_inputs = gpio_read();
     adc_sample();
-    dac_write(static_cast<uint16_t>((g_tick << 4) & 0x0FFFU));
-    (void) spi_xfer(static_cast<uint8_t>(g_tick));
-    (void) iic_write(0x50U, static_cast<uint8_t>(g_tick));
-    canfd_send(R_CANFD0, 0x123U, static_cast<uint8_t>(g_tick));
-    canfd_send(R_CANFD1, 0x321U, static_cast<uint8_t>(g_tick));
-    lin_break_and_sync();
-    const int rx = sci_getc(kAppUart);
-    if (rx >= 0)
+    (void) spi_xfer(sample);
+    (void) iic_write(0x50U, sample);
+    if (canfd_send(R_CANFD0, 0x123U, &sample, 1U, false))
     {
-        sci_putc(kAppUart, static_cast<uint8_t>(rx));
+        hl_board_send_can_log(&g_link, 0U, 0x123U, &sample, 1U, 0);
     }
+    if (canfd_send(R_CANFD1, 0x321U, &sample, 1U, false))
+    {
+        hl_board_send_can_log(&g_link, 1U, 0x321U, &sample, 1U, 0);
+    }
+    lin_break_and_sync();
+    hl_board_send_snapshot(&g_link);
     log_line();
 }
 } // namespace
 
 extern "C" void board_app_run(void)
 {
+    uint32_t phase = 0U;
     bringup();
     for (;;)
     {
-        poll();
-        vTaskDelay(pdMS_TO_TICKS(500));
+        poll_link();
+        if ((phase % 25U) == 0U)
+        {
+            poll();
+        }
+        ++phase;
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }

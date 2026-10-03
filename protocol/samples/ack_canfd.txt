@@ -1,0 +1,7 @@
+sequence: 5
+command: COMMAND_SEND_CAN
+ack {
+  command: COMMAND_SEND_CAN
+  status: 1
+  detail: "can fd unsupported"
+}

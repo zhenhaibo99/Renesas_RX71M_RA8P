@@ -1,0 +1,6 @@
+sequence: 6
+command: COMMAND_SET_PWM
+set_pwm {
+  channel: 0
+  duty_permille: 0
+}

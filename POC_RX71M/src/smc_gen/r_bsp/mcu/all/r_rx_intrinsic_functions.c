@@ -357,8 +357,8 @@ void R_BSP_ChangeToUserMode(void)
 void R_BSP_SetACC(signed long long data)
 {
 #if defined(__GNUC__)
-    __builtin_rx_mvtachi(data >> 32);
-    __builtin_rx_mvtaclo(data & 0xFFFFFFFF);
+    __builtin_rx_mvtachi((int)(data >> 32));
+    __builtin_rx_mvtaclo((int)(data & 0xFFFFFFFF));
 #elif defined(__ICCRX__)
     int32_t data_hi;
     int32_t data_lo;
@@ -460,7 +460,7 @@ short R_BSP_MulAndAccOperation_FixedPoint1(short* data1, short* data2, unsigned 
     }
     if (count != 0) __builtin_rx_maclo(*(short*)ldata1, *(short*)ldata2);
     __builtin_rx_racw(1);
-    return __builtin_rx_mvfachi();
+    return (short)__builtin_rx_mvfachi();
 }
 #endif /* defined(__GNUC__) */
 
@@ -495,7 +495,7 @@ short R_BSP_MulAndAccOperation_FixedPoint2(short* data1, short* data2, unsigned 
     }
     if (count != 0) __builtin_rx_maclo(*(short*)ldata1, *(short*)ldata2);
     __builtin_rx_racw(2);
-    return __builtin_rx_mvfachi();
+    return (short)__builtin_rx_mvfachi();
 }
 #endif /* defined(__GNUC__) */
 

@@ -1,0 +1,8 @@
+sequence: 4
+command: COMMAND_SEND_CAN
+send_can {
+  channel: 1
+  id: 291
+  data: "\x01\x02\xff"
+  fd: true
+}

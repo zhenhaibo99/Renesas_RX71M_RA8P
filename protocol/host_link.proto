@@ -1,0 +1,81 @@
+// Protocol Buffers 36.2（2026-09-17，protoc 36.2）。
+// 线格式是 proto3。取值为 0 仍有意义的字段使用 optional，这样 0 也会出现在载荷里。
+// 外层私有帧 HL1 不是 Protobuf，定义在 host_link.h。
+
+syntax = "proto3";
+
+package renesas.hostlink;
+
+enum BoardKind {
+  BOARD_KIND_UNSPECIFIED = 0;
+  BOARD_KIND_RX71M = 1;
+  BOARD_KIND_RA8P = 2;
+}
+
+enum Command {
+  COMMAND_UNSPECIFIED = 0;
+  COMMAND_PING = 1;
+  COMMAND_SNAPSHOT = 2;
+  COMMAND_SET_OUTPUTS = 3;
+  COMMAND_SET_DAC = 4;
+  COMMAND_SET_PWM = 5;
+  COMMAND_SEND_CAN = 6;
+}
+
+message Snapshot {
+  uint32 tick = 1;
+  uint32 adc0 = 2;
+  uint32 adc1 = 3;
+  uint32 inputs = 4;
+  uint32 outputs = 5;
+  uint32 dac = 6;
+  BoardKind board = 7;
+  bool can_fd = 8;
+  string name = 9;
+}
+
+message SetOutputs {
+  optional uint32 mask = 1;
+}
+
+message SetDac {
+  optional uint32 code = 1;
+}
+
+message SetPwm {
+  optional uint32 channel = 1;
+  optional uint32 duty_permille = 2;
+}
+
+message SendCan {
+  optional uint32 channel = 1;
+  optional uint32 id = 2;
+  bytes data = 3;
+  optional bool fd = 4;
+}
+
+message CanLog {
+  optional uint32 channel = 1;
+  optional uint32 id = 2;
+  bytes data = 3;
+  optional bool fd = 4;
+  optional bool tx = 5;
+}
+
+message Ack {
+  Command command = 1;
+  uint32 status = 2;
+  string detail = 3;
+}
+
+message Envelope {
+  uint32 sequence = 1;
+  Command command = 2;
+  Snapshot snapshot = 3;
+  SetOutputs set_outputs = 4;
+  SetDac set_dac = 5;
+  SetPwm set_pwm = 6;
+  SendCan send_can = 7;
+  CanLog can_log = 8;
+  Ack ack = 9;
+}

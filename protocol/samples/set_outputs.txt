@@ -1,0 +1,5 @@
+sequence: 2
+command: COMMAND_SET_OUTPUTS
+set_outputs {
+  mask: 0
+}
