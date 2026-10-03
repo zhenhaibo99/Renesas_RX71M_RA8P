@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<QE>
+    <Segment id="Project">
+        <Setting id="SrcGeneratedPath" value="src/smc_gen"/>
+    </Segment>
+    <Segment id="Pin">
+        <Setting id="EMLE" value="EMLE"/>
+        <Setting id="PG7" value="TRDATA3"/>
+        <Setting id="P36" value="EXTAL"/>
+        <Setting id="P37" value="XTAL"/>
+        <Setting id="PF1" value="TCK"/>
+        <Setting id="PG2" value="TRDATA0"/>
+        <Setting id="PF0" value="TDO"/>
+        <Setting id="PF3" value="TMS"/>
+        <Setting id="PG4" value="TRSYNC"/>
+        <Setting id="PF2" value="TDI"/>
+        <Setting id="PG3" value="TRDATA1"/>
+        <Setting id="PG6" value="TRDATA2"/>
+        <Setting id="PG5" value="TRCLK"/>
+        <Setting id="PF4" value="TRST#"/>
+    </Segment>
+    <Segment id="Device">
+        <Setting id="Series" value="RX700"/>
+        <Setting id="Group" value="RX71M"/>
+        <Setting id="Board" value="Custom User Board"/>
+        <Setting id="PartNo" value="R5F571MLDxLC"/>
+        <Setting id="PinCount" value="177"/>
+    </Segment>
+    <Segment id="Component">
+        <Setting id="r_bsp" value="FIT"/>
+        <Setting id="FreeRTOS_Object" value=""/>
+        <Setting id="FreeRTOS_Kernel" value=""/>
+        <Segment component="r_bsp7.71" id="r_bsp" source="com.renesas.smc.tools.swcomponent.fit.source">
+            <Setting id="BSP_CFG_SWINT_UNIT1_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_LOW_LEVEL_INTERFACE_STDIO_ENABLE" value="1"/>
+            <Setting id="BSP_CFG_SWINT_UNIT2_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_LOW_LEVEL_INTERFACE_REENTRANT_LIB_ENABLE" value="1"/>
+            <Setting id="BSP_CFG_USER_ENTER_CRITICAL_FUNCTION" value="my_enter_critical_function"/>
+            <Setting id="BSP_CFG_USER_WARM_START_POST_C_FUNCTION" value="my_sw_warmstart_postc_function"/>
+            <Setting id="BSP_CFG_INTERNAL_PERIPHERAL_BUS2_3_PRIORITY" value="0"/>
+            <Setting id="BSP_CFG_USER_WARM_START_PRE_C_FUNCTION" value="my_sw_warmstart_prec_function"/>
+            <Setting id="BSP_CFG_PARAM_CHECKING_ENABLE" value="1"/>
+            <Setting id="BSP_CFG_SERIAL_PROGRAMMER_CONECT_ENABLE" value="1"/>
+            <Setting id="BSP_CFG_SCI_UART_TERMINAL_INTERRUPT_PRIORITY" value="15"/>
+            <Setting id="BSP_CFG_INTERNAL_PERIPHERAL_BUS1_PRIORITY" value="0"/>
+            <Setting id="BSP_CFG_USER_WARM_START_CALLBACK_PRE_INITC_ENABLED" value="0"/>
+            <Setting id="BSP_CFG_PROGRAM_CMD_PROTECT_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_LOW_LEVEL_INTERFACE_SBRK_ENABLE" value="1"/>
+            <Setting id="BSP_CFG_USTACK_BYTES" value="0x1000"/>
+            <Setting id="BSP_CFG_MEMORY_BUS2_PRIORITY" value="0"/>
+            <Setting id="BSP_CFG_INTERNAL_PERIPHERAL_BUS4_5_PRIORITY" value="0"/>
+            <Setting id="BSP_CFG_EXTERNAL_BUS_PRIORITY" value="0"/>
+            <Setting id="BSP_CFG_IO_LIB_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_ID_CODE_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_MEMORY_BUS1_3_PRIORITY" value="0"/>
+            <Setting id="BSP_CFG_BUS_PRIORITY_INITIALIZE_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_ID_CODE_LONG_4" value="0xFFFFFFFF"/>
+            <Setting id="BSP_CFG_ID_CODE_LONG_2" value="0xFFFFFFFF"/>
+            <Setting id="BSP_CFG_ID_CODE_LONG_3" value="0xFFFFFFFF"/>
+            <Setting id="BSP_CFG_BLOCK_ERASE_CMD_PROTECT_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_USER_CHARPUT_FUNCTION" value="my_sw_charput_function"/>
+            <Setting id="BSP_CFG_USER_BOOT_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_TRUSTED_MODE_FUNCTION" value="0xFFFFFFFF"/>
+            <Setting id="BSP_CFG_SCI_UART_TERMINAL_BITRATE" value="115200"/>
+            <Setting id="BSP_CFG_SWINT_TASK_BUFFER_NUMBER" value="8"/>
+            <Setting id="BSP_CFG_USER_LOCKING_HW_UNLOCK_FUNCTION" value="my_hw_unlocking_function"/>
+            <Setting id="BSP_CFG_ID_CODE_LONG_1" value="0xFFFFFFFF"/>
+            <Setting id="BSP_CFG_USER_STACK_ENABLE" value="1"/>
+            <Setting id="BSP_CFG_SCI_UART_TERMINAL_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_INTERNAL_PERIPHERAL_BUS6_PRIORITY" value="0"/>
+            <Setting id="BSP_CFG_USER_LOCKING_SW_UNLOCK_FUNCTION" value="my_sw_unlocking_function"/>
+            <Setting id="BSP_CFG_USER_CHARPUT_ENABLED" value="0"/>
+            <Setting id="BSP_CFG_SWINT_IPR_INITIAL_VALUE" value="0x1"/>
+            <Setting id="BSP_CFG_RUN_IN_USER_MODE" value="0"/>
+            <Setting id="BSP_CFG_READ_CMD_PROTECT_ENABLE" value="0"/>
+            <Setting id="BSP_CFG_USER_LOCKING_HW_LOCK_FUNCTION" value="my_hw_locking_function"/>
+            <Setting id="BSP_CFG_USER_EXIT_CRITICAL_FUNCTION" value="my_exit_critical_function"/>
+            <Setting id="BSP_CFG_USER_LOCKING_TYPE" value="bsp_lock_t"/>
+            <Setting id="BSP_CFG_HEAP_BYTES" value="0x400"/>
+            <Setting id="BSP_CFG_FIT_IPL_MAX" value="0xF"/>
+            <Setting id="BSP_CFG_USER_LOCKING_SW_LOCK_FUNCTION" value="my_sw_locking_function"/>
+            <Setting id="BSP_CFG_ISTACK_BYTES" value="0x400"/>
+            <Setting id="BSP_CFG_SCI_UART_TERMINAL_CHANNEL" value="7"/>
+            <Setting id="BSP_CFG_USER_LOCKING_ENABLED" value="0"/>
+            <Setting id="BSP_CFG_USER_CHARGET_ENABLED" value="0"/>
+            <Setting id="BSP_CFG_USER_CHARGET_FUNCTION" value="my_sw_charget_function"/>
+            <Setting id="BSP_CFG_USER_WARM_START_CALLBACK_POST_INITC_ENABLED" value="0"/>
+            <Setting id="BSP_CFG_USER_EXCLUSIVE_CONTROL_ENABLE" value="0"/>
+        </Segment>
+        <Segment component="com.renesas.smc.tools.swcomponent.rtosconfigurator.freertos.objectfreertos11.1.0-rx-1.0.0" id="FreeRTOS_Object" source="com.renesas.smc.tools.swcomponent.rtosconfigurator.source"/>
+        <Segment component="com.renesas.smc.tools.swcomponent.rtosconfigurator.freertos.kernelfreertos11.1.0-rx-1.0.0" id="FreeRTOS_Kernel" source="com.renesas.smc.tools.swcomponent.rtosconfigurator.source"/>
+    </Segment>
+    <Segment id="Clock">
+        <Setting id="PCLKD" value="60000.0"/>
+        <Setting id="CacMCLK" value="24000.0"/>
+        <Setting id="PLLCLK" value="240000.0"/>
+        <Setting id="PCLKB" value="60000.0"/>
+        <Setting id="VCC" value="3.3"/>
+        <Setting id="PCLKC" value="60000.0"/>
+        <Setting id="BusCLK" value="120000.0"/>
+        <Setting id="PCLKA" value="120000.0"/>
+        <Setting id="ICLK" value="240000.0"/>
+        <Setting id="FCLK" value="60000.0"/>
+        <Setting id="SysCLKSrc" value="4.0"/>
+        <Setting id="ExtCLK" value="24000.0"/>
+    </Segment>
+</QE>
