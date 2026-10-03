@@ -6,7 +6,7 @@ unit uHostLink;
 }
 
 {$mode objfpc}{$H+}
-{$modeswitch advancedrecords}
+{$modeswitch advancedrecords} { TWr、TRd 里带方法，需要这个开关。 }
 
 interface
 
@@ -14,20 +14,20 @@ uses
   SysUtils;
 
 const
-  HL_MAGIC0 = $A5;
-  HL_MAGIC1 = $5A;
+  HL_MAGIC0 = $A5;             { 帧头第一字节。 }
+  HL_MAGIC1 = $5A;             { 帧头第二字节。 }
   HL_VERSION = 1;
 
-  HL_BOARD_ANY = 0;
+  HL_BOARD_ANY = 0;            { 不限定板卡。 }
   HL_BOARD_RX71M = 1;
   HL_BOARD_RA8P = 2;
 
-  HL_FLAG_FROM_BOARD = $01;
-  HL_FLAG_CAN_FD = $02;
+  HL_FLAG_FROM_BOARD = $01;    { bit0：帧来自板卡。主机发出时为 0。 }
+  HL_FLAG_CAN_FD = $02;        { bit1：该板支持 CAN FD。 }
 
   HL_CMD_UNSPECIFIED = 0;
-  HL_CMD_PING = 1;
-  HL_CMD_SNAPSHOT = 2;
+  HL_CMD_PING = 1;             { 探活，板卡回 Snapshot。 }
+  HL_CMD_SNAPSHOT = 2;         { 读状态。 }
   HL_CMD_SET_OUTPUTS = 3;
   HL_CMD_SET_DAC = 4;
   HL_CMD_SET_PWM = 5;
@@ -37,33 +37,33 @@ const
   HL_ACK_UNSUPPORTED = 1;
   HL_ACK_BAD_ARG = 2;
 
-  HL_CAN_MAX = 8;
+  HL_CAN_MAX = 8;              { 本协议只收 1–8 字节，不做 CAN FD 长数据。 }
   HL_MAX_PAYLOAD = 192;
 
 type
   THlEnvelope = record
-    Sequence: Cardinal;
+    Sequence: Cardinal;        { 主机从 1 递增。 }
     Command: Cardinal;
     HasSnapshot: Boolean;
     Tick: Cardinal;
     Adc0: Cardinal;
     Adc1: Cardinal;
-    Inputs: Cardinal;
+    Inputs: Cardinal;          { GPIO 输入，低 4 位。 }
     Outputs: Cardinal;
     Dac: Cardinal;
-    Board: Cardinal;
-    CanFd: Boolean;
+    Board: Cardinal;           { 1 RX71M，2 RA8P。 }
+    CanFd: Boolean;            { 该板是否支持 CAN FD。 }
     Name: string;
     HasSetOutputs: Boolean;
-    OutputsMask: Cardinal;
+    OutputsMask: Cardinal;     { 0–15，0 也要编码。 }
     HasSetDac: Boolean;
-    DacCode: Cardinal;
+    DacCode: Cardinal;         { 0–4095。 }
     HasSetPwm: Boolean;
-    PwmChannel: Cardinal;
-    PwmDuty: Cardinal;
+    PwmChannel: Cardinal;      { 0–3。 }
+    PwmDuty: Cardinal;         { 千分比 0–1000。 }
     HasSendCan: Boolean;
-    CanChannel: Cardinal;
-    CanId: Cardinal;
+    CanChannel: Cardinal;      { 0 或 1。 }
+    CanId: Cardinal;           { 11 位标准帧。 }
     CanData: array[0..HL_CAN_MAX - 1] of Byte;
     CanDlc: Byte;
     CanReqFd: Boolean;
@@ -73,39 +73,40 @@ type
     LogData: array[0..HL_CAN_MAX - 1] of Byte;
     LogDlc: Byte;
     LogFd: Boolean;
-    LogTx: Boolean;
+    LogTx: Boolean;            { 真表示板卡发出的帧。 }
     HasAck: Boolean;
     AckCommand: Cardinal;
     AckStatus: Cardinal;
-    AckDetail: string;
+    AckDetail: string;         { ASCII 原因，成功时为空。 }
   end;
 
   THlParser = class
   public
-    Board: Byte;
+    Board: Byte;               { 最近一帧的目标板卡。 }
     Flags: Byte;
-    Seq: Byte;
+    Seq: Byte;                 { 序号低 8 位。 }
     Len: Word;
     Payload: array[0..HL_MAX_PAYLOAD - 1] of Byte;
     constructor Create;
     procedure Reset;
-    function Push(Value: Byte): Boolean;
+    function Push(Value: Byte): Boolean; { 凑齐且 CRC 正确时返回 True。 }
   private
-    FState: Integer;
+    FState: Integer;           { 0 在等 0xA5。 }
     FGot: Word;
     FCrcLo: Byte;
-    FPrefix: array[0..5] of Byte;
+    FPrefix: array[0..5] of Byte; { 版本到长度，供重算 CRC。 }
   end;
 
 function HlEncodeEnvelope(const Msg: THlEnvelope): TBytes;
 function HlDecodeEnvelope(const Data: TBytes; out Msg: THlEnvelope): Boolean;
 function HlEncodeFrame(Board, Flags, Seq: Byte; const Payload: TBytes): TBytes;
-function HostLinkMatchesProtoc: Boolean;
+function HostLinkMatchesProtoc: Boolean; { 和 protoc 36.2 黄金字节对照。 }
 function HlBoardName(Board: Cardinal): string;
 
 implementation
 
 type
+  { 往动态数组里写 protobuf。N 是已写字节数。 }
   TWr = record
     B: TBytes;
     N: Integer;
@@ -120,6 +121,7 @@ type
     function Done: TBytes;
   end;
 
+  { 从动态数组里读。I 是当前下标。 }
   TRd = record
     P: TBytes;
     I: Integer;
@@ -130,6 +132,7 @@ type
     function Sub(out Child: TRd): Boolean;
   end;
 
+{ 清记录。字符串先写成空，避免 FillChar 碰到已有的托管字符串。 }
 procedure ClearEnv(out Msg: THlEnvelope);
 begin
   FillChar(Msg, SizeOf(Msg), 0);
@@ -140,11 +143,12 @@ end;
 procedure TWr.U8(V: Byte);
 begin
   if N >= Length(B) then
-    SetLength(B, N + 32);
+    SetLength(B, N + 32);     { 一次多留 32 字节，减少反复分配。 }
   B[N] := V;
   Inc(N);
 end;
 
+{ 无符号 varint。低 7 位是数据，最高位为 1 表示后面还有。 }
 procedure TWr.Varint(V: Cardinal);
 var
   Part: Byte;
@@ -158,19 +162,22 @@ begin
   until V = 0;
 end;
 
+{ 字段标签：字段号左移 3 位，低 3 位是线型。 }
 procedure TWr.Key(Field, Wire: Cardinal);
 begin
   Varint((Field shl 3) or Wire);
 end;
 
+{ Force 为假时，0 不编码，与 proto3 省略默认值一致。 }
 procedure TWr.U32(Field, V: Cardinal; Force: Boolean);
 begin
   if (V = 0) and not Force then
     Exit;
-  Key(Field, 0);
+  Key(Field, 0);              { 线型 0 = varint。 }
   Varint(V);
 end;
 
+{ bool 在线上是 0 或 1。Force 为真时 false 也写出。 }
 procedure TWr.BoolField(Field: Cardinal; V, Force: Boolean);
 begin
   if (not V) and (not Force) then
@@ -182,6 +189,7 @@ begin
     U8(0);
 end;
 
+{ bytes。空内容不编码。线型 2，先写长度。 }
 procedure TWr.Raw(Field: Cardinal; const Data: array of Byte; Len: Integer);
 var
   K: Integer;
@@ -194,6 +202,7 @@ begin
     U8(Data[K]);
 end;
 
+{ 字符串按 bytes 编码，不含结尾 0。 }
 procedure TWr.Text(Field: Cardinal; const S: string);
 var
   RawBytes: array of Byte;
@@ -203,32 +212,34 @@ begin
     Exit;
   SetLength(RawBytes, Length(S));
   for K := 1 to Length(S) do
-    RawBytes[K - 1] := Byte(Ord(S[K]));
+    RawBytes[K - 1] := Byte(Ord(S[K])); { 按单字节 ASCII 写出。 }
   if Length(RawBytes) > 0 then
     Raw(Field, RawBytes, Length(RawBytes));
 end;
 
+{ 嵌套消息。长度可以为 0。 }
 procedure TWr.Sub(Field: Cardinal; const Body: TBytes);
 begin
   Key(Field, 2);
   Varint(Cardinal(Length(Body)));
   if Length(Body) > 0 then
-    Raw(0, Body, 0);
+    Raw(0, Body, 0);          { 长度参数是 0，这一调用不会写出任何字节。 }
   if Length(Body) > 0 then
   begin
     if N + Length(Body) > Length(B) then
       SetLength(B, N + Length(Body) + 16);
-    Move(Body[0], B[N], Length(Body));
+    Move(Body[0], B[N], Length(Body)); { 真正把子消息拷进来。 }
     Inc(N, Length(Body));
   end;
 end;
 
 function TWr.Done: TBytes;
 begin
-  SetLength(B, N);
+  SetLength(B, N);            { 丢掉多留的尾部。 }
   Result := B;
 end;
 
+{ 读 uint32 varint。超过 5 字节或数据被截断则失败。 }
 function TRd.Varint(out V: Cardinal): Boolean;
 var
   Shift: Integer;
@@ -237,7 +248,7 @@ begin
   V := 0;
   Shift := 0;
   Result := False;
-  while Shift <= 28 do
+  while Shift <= 28 do        { 32 位最多 5 组 7 位。 }
   begin
     if I >= Length(P) then
       Exit;
@@ -245,11 +256,12 @@ begin
     Inc(I);
     V := V or (Cardinal(Part and $7F) shl Shift);
     if (Part and $80) = 0 then
-      Exit(True);
+      Exit(True);             { 最高位为 0，本 varint 结束。 }
     Inc(Shift, 7);
   end;
 end;
 
+{ 跳过不认识的字段，避免以后加字段时解不开。 }
 function TRd.Skip(Wire: Cardinal): Boolean;
 var
   N: Cardinal;
@@ -257,24 +269,25 @@ begin
   Result := False;
   N := 0;
   if Wire = 0 then
-    Exit(Varint(N));
+    Exit(Varint(N));          { varint，读掉即可。 }
   if Wire = 1 then
-    N := 8
+    N := 8                    { 64 位定长。 }
   else if Wire = 5 then
-    N := 4
+    N := 4                    { 32 位定长。 }
   else if Wire = 2 then
   begin
-    if not Varint(N) then
+    if not Varint(N) then     { 长度定界，先读长度。 }
       Exit;
   end
   else
-    Exit;
+    Exit;                     { 线型 3、4 是组，proto3 不用。 }
   if (I > Length(P)) or (Cardinal(Length(P) - I) < N) then
     Exit;
   Inc(I, Integer(N));
   Result := True;
 end;
 
+{ 读定长字节。超过 MaxLen 时仍把输入吃掉，但返回失败。 }
 function TRd.Exact(var Dst: array of Byte; MaxLen: Integer; out N: Integer): Boolean;
 var
   Count: Cardinal;
@@ -286,7 +299,7 @@ begin
   if (I > Length(P)) or (Cardinal(Length(P) - I) < Count) or (Count > Cardinal(MaxLen)) then
   begin
     if (I <= Length(P)) and (Cardinal(Length(P) - I) >= Count) then
-      Inc(I, Integer(Count));
+      Inc(I, Integer(Count)); { CAN 超过 8 字节，整段丢掉。 }
     Exit;
   end;
   if Count > 0 then
@@ -296,6 +309,7 @@ begin
   Result := True;
 end;
 
+{ 读字符串并截断到 MaxChars。游标按原始长度前进。 }
 function TRd.Text(out S: string; MaxChars: Integer): Boolean;
 var
   Count: Cardinal;
@@ -312,11 +326,12 @@ begin
     CopyN := MaxChars;
   SetLength(S, CopyN);
   for K := 0 to CopyN - 1 do
-    S[K + 1] := Char(P[I + K]);
+    S[K + 1] := Char(P[I + K]); { FPC 字符串从 1 起。 }
   Inc(I, Integer(Count));
   Result := True;
 end;
 
+{ 切出嵌套消息。子游标从 0 开始，外层跳过这段。 }
 function TRd.Sub(out Child: TRd): Boolean;
 var
   Count: Cardinal;
@@ -334,11 +349,12 @@ begin
   Result := True;
 end;
 
+{ Snapshot。数值为 0 或空名字时省略。 }
 function EncodeSnapshot(const Msg: THlEnvelope): TBytes;
 var
   W: TWr;
 begin
-  FillChar(W, SizeOf(W), 0);
+  FillChar(W, SizeOf(W), 0);  { 动态数组还是空的，可以整块清零。 }
   W.U32(1, Msg.Tick, False);
   W.U32(2, Msg.Adc0, False);
   W.U32(3, Msg.Adc1, False);
@@ -346,11 +362,12 @@ begin
   W.U32(5, Msg.Outputs, False);
   W.U32(6, Msg.Dac, False);
   W.U32(7, Msg.Board, False);
-  W.BoolField(8, Msg.CanFd, False);
+  W.BoolField(8, Msg.CanFd, False); { RX 为假，这一位省略。 }
   W.Text(9, Msg.Name);
   Result := W.Done;
 end;
 
+{ SendCan 与 CanLog 字段号相同。Log 为真时多写 tx。通道、ID、fd 即使是 0 也写出。 }
 function EncodeCan(const Msg: THlEnvelope; Log: Boolean): TBytes;
 var
   W: TWr;
@@ -378,15 +395,16 @@ begin
     Fd := Msg.CanReqFd;
     Tx := False;
   end;
-  W.U32(1, Channel, True);
+  W.U32(1, Channel, True);    { Force，通道 0 也要在线上。 }
   W.U32(2, Id, True);
   W.Raw(3, Data, Dlc);
-  W.BoolField(4, Fd, True);
+  W.BoolField(4, Fd, True);   { 经典 CAN 也写出 false。 }
   if Log then
-    W.BoolField(5, Tx, True);
+    W.BoolField(5, Tx, True); { 只有 CanLog 有 tx。 }
   Result := W.Done;
 end;
 
+{ 编码整包 Envelope。出现哪个 has_*，就嵌进对应字段。 }
 function HlEncodeEnvelope(const Msg: THlEnvelope): TBytes;
 var
   W: TWr;
@@ -401,7 +419,7 @@ begin
   if Msg.HasSetOutputs then
   begin
     FillChar(Inner, SizeOf(Inner), 0);
-    Inner.U32(1, Msg.OutputsMask, True);
+    Inner.U32(1, Msg.OutputsMask, True); { 掩码 0 也编码。 }
     W.Sub(4, Inner.Done);
   end;
   if Msg.HasSetDac then
@@ -414,7 +432,7 @@ begin
   begin
     FillChar(Inner, SizeOf(Inner), 0);
     Inner.U32(1, Msg.PwmChannel, True);
-    Inner.U32(2, Msg.PwmDuty, True);
+    Inner.U32(2, Msg.PwmDuty, True);     { 通道 0、占空比 0 都保留。 }
     W.Sub(6, Inner.Done);
   end;
   if Msg.HasSendCan then
@@ -425,7 +443,7 @@ begin
   begin
     FillChar(Inner, SizeOf(Inner), 0);
     Inner.U32(1, Msg.AckCommand, False);
-    Inner.U32(2, Msg.AckStatus, False);
+    Inner.U32(2, Msg.AckStatus, False);  { 成功时状态 0 省略。 }
     Inner.Text(3, Msg.AckDetail);
     Nested := Inner.Done;
     W.Sub(9, Nested);
@@ -433,6 +451,7 @@ begin
   Result := W.Done;
 end;
 
+{ 解 Snapshot。字段 9 是名字，其余是 varint。 }
 function DecodeSnapshot(var R: TRd; var Msg: THlEnvelope): Boolean;
 var
   Tag, Field, Wire, V: Cardinal;
@@ -442,8 +461,8 @@ begin
   begin
     if not R.Varint(Tag) then
       Exit;
-    Field := Tag shr 3;
-    Wire := Tag and 7;
+    Field := Tag shr 3;        { 字段号。 }
+    Wire := Tag and 7;         { 线型。 }
     if (Field = 9) and (Wire = 2) then
     begin
       if not R.Text(Msg.Name, 32) then
@@ -472,6 +491,7 @@ begin
   Result := True;
 end;
 
+{ 解 SendCan 或 CanLog。Log 为真时写入 Log* 字段。 }
 function DecodeCan(var R: TRd; var Msg: THlEnvelope; Log: Boolean): Boolean;
 var
   Tag, Field, Wire, V: Cardinal;
@@ -485,7 +505,7 @@ begin
       Exit;
     Field := Tag shr 3;
     Wire := Tag and 7;
-    if (Field = 3) and (Wire = 2) then
+    if (Field = 3) and (Wire = 2) then { 数据字节。 }
     begin
       FillChar(Tmp, SizeOf(Tmp), 0);
       if not R.Exact(Tmp, HL_CAN_MAX, N) then
@@ -527,6 +547,7 @@ begin
   Result := True;
 end;
 
+{ 解 Ack。字段 3 是原因字符串。 }
 function DecodeAck(var R: TRd; var Msg: THlEnvelope): Boolean;
 var
   Tag, Field, Wire, V: Cardinal;
@@ -560,13 +581,14 @@ begin
   Result := True;
 end;
 
+{ 解只有一到两个 varint 的子消息。缺省为 0。 }
 function DecodeTwo(var R: TRd; out A, B: Cardinal): Boolean;
 var
   Tag, Field, Wire, V: Cardinal;
 begin
   Result := False;
-  A := 0;
-  B := 0;
+  A := 0;                     { 字段 1。 }
+  B := 0;                     { 字段 2。SetOutputs、SetDac 不用它。 }
   while R.I < Length(R.P) do
   begin
     if not R.Varint(Tag) then
@@ -589,6 +611,7 @@ begin
   Result := True;
 end;
 
+{ 解 Envelope。成功返回 True。字段 3–9 是嵌套消息。 }
 function HlDecodeEnvelope(const Data: TBytes; out Msg: THlEnvelope): Boolean;
 var
   R, Sub: TRd;
@@ -670,6 +693,7 @@ begin
   Result := True;
 end;
 
+{ CRC-16/CCITT-FALSE：多项式 0x1021，初值由调用方传入，不反射，结果不异或。 }
 function Crc16(const Data: array of Byte; Len: Integer; Seed: Word): Word;
 var
   I, B: Integer;
@@ -688,6 +712,7 @@ begin
   Result := C;
 end;
 
+{ 组 HL1 帧：A5 5A | 版本 | 板卡 | 标志 | 序号 | 长度小端 | 载荷 | CRC 小端。 }
 function HlEncodeFrame(Board, Flags, Seq: Byte; const Payload: TBytes): TBytes;
 var
   Prefix: array[0..5] of Byte;
@@ -697,14 +722,14 @@ begin
   Prefix[0] := HL_VERSION;
   Prefix[1] := Board;
   Prefix[2] := Flags;
-  Prefix[3] := Seq;
+  Prefix[3] := Seq;                          { 只放序号低 8 位。 }
   Prefix[4] := Byte(Length(Payload) and $FF);
   Prefix[5] := Byte((Length(Payload) shr 8) and $FF);
-  Result := nil;
-  Crc := Crc16(Prefix, 6, $FFFF);
+  Result := nil;                             { 托管结果先清空，避免编译器提示。 }
+  Crc := Crc16(Prefix, 6, $FFFF);            { CRC 从版本算起，不含魔数。 }
   if Length(Payload) > 0 then
     Crc := Crc16(Payload, Length(Payload), Crc);
-  SetLength(Result, 10 + Length(Payload));
+  SetLength(Result, 10 + Length(Payload));   { 2 魔数 + 6 头 + 载荷 + 2 CRC。 }
   Result[0] := HL_MAGIC0;
   Result[1] := HL_MAGIC1;
   for I := 0 to 5 do
@@ -715,7 +740,7 @@ begin
     Result[N] := Payload[I];
     Inc(N);
   end;
-  Result[N] := Byte(Crc and $FF);
+  Result[N] := Byte(Crc and $FF);            { CRC 低字节在前。 }
   Result[N + 1] := Byte((Crc shr 8) and $FF);
 end;
 
@@ -727,7 +752,7 @@ end;
 
 procedure THlParser.Reset;
 begin
-  FState := 0;
+  FState := 0;            { 回到等 0xA5。 }
   FGot := 0;
   Board := 0;
   Flags := 0;
@@ -735,6 +760,7 @@ begin
   Len := 0;
 end;
 
+{ 喂入一个字节。状态 0–10 对应魔数、版本、板卡、标志、序号、长度、载荷、CRC。 }
 function THlParser.Push(Value: Byte): Boolean;
 var
   Crc, Got: Word;
@@ -748,7 +774,7 @@ begin
       if Value = HL_MAGIC1 then
         FState := 2
       else if Value = HL_MAGIC0 then
-        FState := 1
+        FState := 1             { 连续两个 0xA5，后一个仍可当帧头。 }
       else
         FState := 0;
     2:
@@ -757,7 +783,7 @@ begin
         begin
           FState := 0;
           if Value = HL_MAGIC0 then
-            FState := 1;
+            FState := 1;        { 版本不对，这个字节若是 0xA5 就重新同步。 }
           Exit;
         end;
         FPrefix[0] := Value;
@@ -783,13 +809,13 @@ begin
       end;
     6:
       begin
-        Len := Value;
+        Len := Value;           { 长度低字节。 }
         FPrefix[4] := Value;
         FState := 7;
       end;
     7:
       begin
-        Len := Len or (Word(Value) shl 8);
+        Len := Len or (Word(Value) shl 8); { 长度高字节，小端。 }
         FPrefix[5] := Value;
         FGot := 0;
         if Len > HL_MAX_PAYLOAD then
@@ -800,7 +826,7 @@ begin
           Exit;
         end;
         if Len = 0 then
-          FState := 9
+          FState := 9           { 空载荷直接等 CRC。 }
         else
           FState := 8;
       end;
@@ -822,7 +848,7 @@ begin
         Crc := Crc16(FPrefix, 6, $FFFF);
         if Len > 0 then
           Crc := Crc16(Payload, Len, Crc);
-        FState := 0;
+        FState := 0;            { 无论对错都回到找下一帧。 }
         FGot := 0;
         Result := Got = Crc;
       end;
@@ -843,6 +869,7 @@ begin
       Exit(False);
 end;
 
+{ 对照 protoc 36.2：PING、掩码 0 的输出、通道 0 占空比 0 的 PWM，再回环一帧 Snapshot。 }
 function HostLinkMatchesProtoc: Boolean;
 var
   Msg: THlEnvelope;
@@ -865,13 +892,13 @@ begin
   ClearEnv(Msg);
   Msg.Sequence := 2;
   Msg.Command := HL_CMD_SET_OUTPUTS;
-  Msg.HasSetOutputs := True;
+  Msg.HasSetOutputs := True;   { 掩码保持 0，线上仍要有 08 00。 }
   if not SameBytes(HlEncodeEnvelope(Msg), Outputs) then
     Exit;
   ClearEnv(Msg);
   Msg.Sequence := 6;
   Msg.Command := HL_CMD_SET_PWM;
-  Msg.HasSetPwm := True;
+  Msg.HasSetPwm := True;       { 通道 0、占空比 0 都要编码。 }
   if not SameBytes(HlEncodeEnvelope(Msg), Pwm) then
     Exit;
   ClearEnv(Msg);
@@ -908,7 +935,7 @@ begin
           Exit;
         if Back.Name <> 'RA8P1' then
           Exit;
-        Exit(True);
+        Exit(True);            { 帧能收齐，载荷还能解回名字。 }
       end;
   finally
     Parser.Free;

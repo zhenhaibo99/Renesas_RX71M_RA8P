@@ -22,6 +22,7 @@
  *               MDC=P71 MDIO=P72 REF50CK=P76 RX_ER=P77
  *               TXD1=P80 RXD0=P81 TX_EN=P82 TXD0=P83 RXD1=P86 CRS_DV=P87
  */
+/* FreeRTOS 的 main_task 调用这个函数，在里面初始化并循环。 */
 extern "C" void board_app_run(void);
 
 #endif

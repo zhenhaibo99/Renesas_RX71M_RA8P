@@ -53,53 +53,53 @@ extern "C" {
 #define HL_MAX_FRAME (10 + HL_MAX_PAYLOAD)
 
 typedef struct HlEnvelope {
-    uint32_t sequence;
-    uint32_t command;
-    int has_snapshot;
-    uint32_t tick;
-    uint32_t adc0;
-    uint32_t adc1;
-    uint32_t inputs;
-    uint32_t outputs;
-    uint32_t dac;
-    uint32_t board;
-    int can_fd;
-    char name[HL_NAME_MAX];
+    uint32_t sequence;                 /* 序号。PC 从 1 递增，板卡主动上报从 0x80000000 递增。 */
+    uint32_t command;                  /* Command 枚举。 */
+    int has_snapshot;                  /* 1 表示本包带状态。 */
+    uint32_t tick;                     /* 板卡周期计数。 */
+    uint32_t adc0;                     /* 第一路 AD。 */
+    uint32_t adc1;                     /* 第二路 AD。 */
+    uint32_t inputs;                   /* GPIO 输入，低 4 位。 */
+    uint32_t outputs;                  /* GPIO 输出，低 4 位。 */
+    uint32_t dac;                      /* DAC 当前码。 */
+    uint32_t board;                    /* BoardKind：1 RX71M，2 RA8P。 */
+    int can_fd;                        /* 该板是否支持 CAN FD。 */
+    char name[HL_NAME_MAX];            /* "RX71M" 或 "RA8P1"。 */
     int has_set_outputs;
-    uint32_t outputs_mask;
+    uint32_t outputs_mask;             /* 要写出的 GPIO 掩码，0–15。 */
     int has_set_dac;
-    uint32_t dac_code;
+    uint32_t dac_code;                 /* 要写的 DAC，0–4095。 */
     int has_set_pwm;
-    uint32_t pwm_channel;
-    uint32_t pwm_duty_permille;
+    uint32_t pwm_channel;              /* 0–3。 */
+    uint32_t pwm_duty_permille;        /* 占空比千分比，0–1000。 */
     int has_send_can;
-    uint32_t can_channel;
-    uint32_t can_id;
+    uint32_t can_channel;              /* 0 或 1。 */
+    uint32_t can_id;                   /* 11 位标准帧。 */
     uint8_t can_data[HL_CAN_MAX];
-    uint8_t can_dlc;
-    int can_req_fd;
+    uint8_t can_dlc;                   /* 1–8。 */
+    int can_req_fd;                    /* 1 表示请求 CAN FD。 */
     int has_can_log;
     uint32_t log_channel;
     uint32_t log_id;
     uint8_t log_data[HL_CAN_MAX];
     uint8_t log_dlc;
     int log_fd;
-    int log_tx;
+    int log_tx;                        /* 1 表示板卡发出的帧。 */
     int has_ack;
-    uint32_t ack_command;
-    uint32_t ack_status;
-    char ack_detail[HL_DETAIL_MAX];
+    uint32_t ack_command;              /* 被应答的命令号。 */
+    uint32_t ack_status;               /* 0 成功，1 不支持，2 参数错误。 */
+    char ack_detail[HL_DETAIL_MAX];    /* ASCII 原因，成功时为空。 */
 } HlEnvelope;
 
 typedef struct HlParser {
-    uint8_t state;
-    uint8_t board;
+    uint8_t state;                     /* 收帧状态机。 */
+    uint8_t board;                     /* 帧里的目标板卡号。 */
     uint8_t flags;
-    uint8_t seq;
-    uint16_t len;
-    uint16_t got;
-    uint8_t crc_lo;
-    uint8_t prefix[6];
+    uint8_t seq;                       /* 序号低 8 位。 */
+    uint16_t len;                      /* 载荷长度。 */
+    uint16_t got;                      /* 已收到的载荷字节数。 */
+    uint8_t crc_lo;                    /* CRC 低字节，等高字节到齐再比较。 */
+    uint8_t prefix[6];                 /* 版本到长度，供 CRC 重算。 */
     uint8_t payload[HL_MAX_PAYLOAD];
 } HlParser;
 
@@ -122,25 +122,25 @@ typedef int (*HlSendCanFn)(void *ctx, uint8_t channel, uint32_t id,
 typedef void (*HlFillFn)(void *ctx, HlEnvelope *msg);
 
 typedef struct HlBoardOps {
-    void *ctx;
-    HlWriteFn write;
+    void *ctx;                         /* 回传给各回调，本工程里未使用。 */
+    HlWriteFn write;                   /* 把一整帧写到业务串口。 */
     HlSetOutputsFn set_outputs;
     HlSetDacFn set_dac;
-    HlSetPwmFn set_pwm;
-    HlSendCanFn send_can;
-    HlFillFn fill_snapshot;
+    HlSetPwmFn set_pwm;                /* 返回 0 成功。 */
+    HlSendCanFn send_can;              /* 返回 0 成功。 */
+    HlFillFn fill_snapshot;            /* 填写 tick、ADC、GPIO、板卡名。 */
 } HlBoardOps;
 
 typedef struct HlBoardLink {
     HlParser parser;
     HlBoardOps ops;
-    uint8_t board_id;
-    uint8_t flags_tx;
-    int linked;
-    uint32_t tx_seq;
+    uint8_t board_id;                  /* 本板编号。 */
+    uint8_t flags_tx;                  /* 发出帧的标志：来自板卡，RA 另加 CAN FD。 */
+    int linked;                        /* 收到过发给本板的合法帧后才为 1。 */
+    uint32_t tx_seq;                   /* 下一次主动上报序号。 */
     uint8_t frame_buf[HL_MAX_FRAME];
-    HlEnvelope req;
-    HlEnvelope rsp;
+    HlEnvelope req;                    /* 刚解出的请求。 */
+    HlEnvelope rsp;                    /* 准备发出的应答或上报。 */
 } HlBoardLink;
 
 void hl_board_init(HlBoardLink *link, uint8_t board_id, int can_fd, const HlBoardOps *ops);

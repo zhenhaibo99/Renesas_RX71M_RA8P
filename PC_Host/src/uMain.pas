@@ -1,7 +1,7 @@
 unit uMain;
 
 {
-  主窗体按设计期 PPI 摆放，Scaled 打开后随系统缩放。
+  主窗体随系统 DPI 缩放。
   左侧通过业务串口收发 HL1 帧，载荷是 Protobuf 36.2。
   RX71M 与 RA8P 用同一帧；CAN FD 只有 RA8P 会执行。
 }
@@ -26,26 +26,26 @@ type
     pnlSide: TPanel;
     grpLink: TGroupBox;
     lblChannel: TLabel;
-    cmbPort: TComboBox;
+    cmbPort: TComboBox;     { 业务 COM 口。 }
     lblBoard: TLabel;
-    cmbBoard: TComboBox;
+    cmbBoard: TComboBox;    { 自动 / RX71M / RA8P。 }
     pnlBottom: TPanel;
     btnRefresh: TButton;
     btnConnect: TButton;
-    scrCmd: TScrollBox;
+    scrCmd: TScrollBox;     { 命令区可滚动，150% 下不被裁掉。 }
     pnlCmd: TPanel;
     lblIo: TLabel;
-    edtGpio: TEdit;
-    edtDac: TEdit;
+    edtGpio: TEdit;         { 输出掩码 0–15。 }
+    edtDac: TEdit;          { DAC 码 0–4095。 }
     lblPwm: TLabel;
-    cmbPwm: TComboBox;
-    edtDuty: TEdit;
+    cmbPwm: TComboBox;      { PWM 通道 0–3。 }
+    edtDuty: TEdit;         { 占空比千分比 0–1000。 }
     btnApply: TButton;
     lblCan: TLabel;
-    cmbCan: TComboBox;
-    edtCanId: TEdit;
+    cmbCan: TComboBox;      { CAN 通道 0 或 1。 }
+    edtCanId: TEdit;        { 11 位标准 ID。 }
     lblData: TLabel;
-    edtCanData: TEdit;
+    edtCanData: TEdit;      { 十六进制数据，最多 8 字节。 }
     chkCanFd: TCheckBox;
     btnCan: TButton;
     btnRead: TButton;
@@ -60,16 +60,16 @@ type
     procedure btnCanClick(Sender: TObject);
     procedure btnReadClick(Sender: TObject);
   private
-    FStartupLogged: Boolean;
+    FStartupLogged: Boolean; { 自检日志只打一次。 }
     FPort: TComPort;
-    FParser: THlParser;
-    FTimer: TTimer;
-    FSeq: Cardinal;
-    FSeen: Boolean;
-    FMiss: Integer;
-    FTicks: Integer;
-    FLinkText: string;
-    FLastTick: Cardinal;
+    FParser: THlParser;      { HL1 逐字节收帧。 }
+    FTimer: TTimer;          { 50 ms 收串口，约 1 s 发一次探活或读状态。 }
+    FSeq: Cardinal;          { 主机序号，从 1 开始，不用 0。 }
+    FSeen: Boolean;          { 已经收到过合法应答。 }
+    FMiss: Integer;          { 连续未应答的秒数计数。 }
+    FTicks: Integer;         { 50 ms 拍子，满 20 拍约 1 秒。 }
+    FLinkText: string;       { 状态栏中间一格。 }
+    FLastTick: Cardinal;     { 上次写进日志的状态，用来去重。 }
     FLastAdc0: Cardinal;
     FLastAdc1: Cardinal;
     FLastInputs: Cardinal;
@@ -88,6 +88,7 @@ type
     function RequireLink: Boolean;
     procedure HandleFrame;
   public
+    { DPI 变化时重算状态栏和分割条的最小宽度。 }
     procedure AutoAdjustLayout(AMode: TLayoutAdjustmentPolicy; const AFromPPI,
       AToPPI, AOldFormWidth, ANewFormWidth: Integer); override;
   end;
@@ -103,9 +104,10 @@ uses
 {$R *.lfm}
 
 const
-  StatusPanelWidth: array[0..2] of Integer = (300, 220, 440);
-  SideMinWidth = 280;
+  StatusPanelWidth: array[0..2] of Integer = (300, 220, 440); { 按 96 PPI 计的三格宽度。 }
+  SideMinWidth = 280;                                          { 左侧面板最小宽度，同样按 96 PPI。 }
 
+{ 十进制、0x 或 $ 前缀都接受。超出 MaxValue 返回 False。 }
 function ParseUint(const Text: string; MaxValue: Cardinal; out Value: Cardinal): Boolean;
 var
   S: string;
@@ -117,7 +119,7 @@ begin
     Exit;
   if (Length(S) > 2) and (S[1] = '0') and ((S[2] = 'x') or (S[2] = 'X')) then
   begin
-    if not TryStrToInt64('$' + Copy(S, 3, 16), N) then
+    if not TryStrToInt64('$' + Copy(S, 3, 16), N) then { 0x 改成 FPC 认识的 $。 }
       Exit;
   end
   else if S[1] = '$' then
@@ -133,6 +135,7 @@ begin
   Result := True;
 end;
 
+{ 偶数位十六进制，空格可忽略。超过 8 字节失败。 }
 function ParseHex(const Text: string; out Data: TBytes): Boolean;
 var
   S: string;
@@ -142,12 +145,12 @@ begin
   S := '';
   for I := 1 to Length(Text) do
     if not (Text[I] in [' ', #9]) then
-      S := S + Text[I];
+      S := S + Text[I];                 { 去掉空格和制表符。 }
   Result := False;
   if (S = '') or ((Length(S) mod 2) <> 0) or (Length(S) > HL_CAN_MAX * 2) then
-    Exit;
+    Exit;                               { 空、奇数位、或超过 8 字节都不合法。 }
   SetLength(Data, Length(S) div 2);
-  Hi := True;
+  Hi := True;                           { 先读高半字节。 }
   Value := 0;
   Nibble := 0;
   for I := 1 to Length(S) do
@@ -157,19 +160,20 @@ begin
       'a'..'f': Nibble := Ord(S[I]) - Ord('a') + 10;
       'A'..'F': Nibble := Ord(S[I]) - Ord('A') + 10;
     else
-      Exit;
+      Exit;                             { 非十六进制字符。 }
     end;
     if Hi then
       Value := Nibble shl 4
     else
     begin
-      Data[(I div 2) - 1] := Byte(Value or Nibble);
+      Data[(I div 2) - 1] := Byte(Value or Nibble); { 高低半字节合成一个字节。 }
     end;
     Hi := not Hi;
   end;
   Result := True;
 end;
 
+{ 把若干字节打成大写十六进制，字节之间空一格。 }
 function HexOf(const Data: array of Byte; Count: Integer): string;
 const
   Digits = '0123456789ABCDEF';
@@ -190,7 +194,7 @@ var
   I: Integer;
 begin
   for I := 0 to StatusBar1.Panels.Count - 1 do
-    StatusBar1.Panels[I].Width := ScaleDesign(Self, StatusPanelWidth[I]);
+    StatusBar1.Panels[I].Width := ScaleDesign(Self, StatusPanelWidth[I]); { 运行期覆盖 lfm 里的宽度。 }
   splMain.MinSize := ScaleDesign(Self, SideMinWidth);
 end;
 
@@ -206,7 +210,7 @@ begin
     MonText := Format('%d × %d px，%d PPI', [Mon.Width, Mon.Height, Mon.PixelsPerInch]);
   StatusBar1.Panels[0].Text := Format('窗体 %d PPI，缩放 %d%%',
     [PixelsPerInch, CurrentScalePercent(Self)]);
-  StatusBar1.Panels[1].Text := FLinkText;
+  StatusBar1.Panels[1].Text := FLinkText; { 连接状态。 }
   StatusBar1.Panels[2].Text := MonText;
 end;
 
@@ -214,8 +218,8 @@ procedure TMainForm.LogLine(const AText: string);
 begin
   memLog.Lines.Add(FormatDateTime('hh:nn:ss', Now) + '  ' + AText);
   if memLog.Lines.Count > 400 then
-    memLog.Lines.Delete(0);
-  memLog.SelStart := Length(memLog.Text);
+    memLog.Lines.Delete(0);            { 只留最近 400 行。 }
+  memLog.SelStart := Length(memLog.Text); { 滚到末尾。 }
 end;
 
 procedure TMainForm.ReloadPorts;
@@ -223,7 +227,7 @@ var
   Current: string;
   Index: Integer;
 begin
-  Current := cmbPort.Text;
+  Current := cmbPort.Text;             { 刷新后尽量留在原来的口。 }
   ListComPorts(cmbPort.Items);
   if cmbPort.Items.Count = 0 then
   begin
@@ -240,7 +244,7 @@ end;
 procedure TMainForm.DisconnectPort;
 begin
   if FTimer <> nil then
-    FTimer.Enabled := False;
+    FTimer.Enabled := False;           { 先停轮询，再关串口。 }
   if FPort <> nil then
     FPort.Close;
   FSeen := False;
@@ -252,10 +256,10 @@ end;
 function TMainForm.WantedBoard: Byte;
 begin
   case cmbBoard.ItemIndex of
-    1: Result := HL_BOARD_RX71M;
+    1: Result := HL_BOARD_RX71M;       { 只收 RX71M 的帧。 }
     2: Result := HL_BOARD_RA8P;
   else
-    Result := HL_BOARD_ANY;
+    Result := HL_BOARD_ANY;            { 0：两块板都收。 }
   end;
 end;
 
@@ -274,12 +278,12 @@ begin
   if not RequireLink then
     Exit;
   Body := Msg;
-  Body.Sequence := FSeq;
+  Body.Sequence := FSeq;               { 序号放进 Protobuf，帧头只用低 8 位。 }
   Payload := HlEncodeEnvelope(Body);
-  Frame := HlEncodeFrame(WantedBoard, 0, Byte(FSeq and $FF), Payload);
+  Frame := HlEncodeFrame(WantedBoard, 0, Byte(FSeq and $FF), Payload); { 主机发出的帧标志为 0。 }
   Inc(FSeq);
   if FSeq = 0 then
-    FSeq := 1;
+    FSeq := 1;                         { 绕回时跳过 0，0 留给“未填序号”。 }
   if not FPort.WriteBytes(Frame) then
   begin
     LogLine('发送失败：' + FPort.LastError);
@@ -291,8 +295,8 @@ procedure TMainForm.SendSimple(Command: Cardinal);
 var
   Msg: THlEnvelope;
 begin
-  FillChar(Msg, SizeOf(Msg), 0);
-  Msg.Command := Command;
+  FillChar(Msg, SizeOf(Msg), 0);       { 局部记录的字符串仍是空的，可以整块清零。 }
+  Msg.Command := Command;              { PING 或 SNAPSHOT，没有子消息。 }
   SendEnv(Msg);
 end;
 
@@ -316,12 +320,12 @@ begin
     LogLine('CRC 通过，但 Protobuf 载荷无法解析。');
     Exit;
   end;
-  FSeen := True;
+  FSeen := True;                       { 链路已经打通，后面改发 SNAPSHOT。 }
   if Msg.HasSnapshot then
   begin
     FLinkText := HlBoardName(Msg.Board) + ' 已连接';
     if Msg.CanFd then
-      FLinkText := FLinkText + '，CAN FD';
+      FLinkText := FLinkText + '，CAN FD'; { RA8P 的状态里这一位为真。 }
     Fresh := (not FHaveSample) or (Msg.Tick <> FLastTick) or (Msg.Adc0 <> FLastAdc0) or
       (Msg.Adc1 <> FLastAdc1) or (Msg.Inputs <> FLastInputs) or
       (Msg.Outputs <> FLastOutputs) or (Msg.Dac <> FLastDac);
@@ -332,7 +336,7 @@ begin
     FLastOutputs := Msg.Outputs;
     FLastDac := Msg.Dac;
     FHaveSample := True;
-    if Fresh then
+    if Fresh then                      { 数值没变就不刷屏。 }
       LogLine(Format('%s  tick=%u  ADC=%u/%u  IN=%s  OUT=%s  DAC=%u',
         [HlBoardName(Msg.Board), Msg.Tick, Msg.Adc0, Msg.Adc1,
          HexOf([Byte(Msg.Inputs)], 1), HexOf([Byte(Msg.Outputs)], 1), Msg.Dac]));
@@ -365,30 +369,30 @@ var
 begin
   if (FPort = nil) or not FPort.IsOpen then
     Exit;
-  N := FPort.ReadBytes(Buf);
+  N := FPort.ReadBytes(Buf);           { 这一拍有多少就读多少。 }
   for I := 0 to N - 1 do
-    if FParser.Push(Buf[I]) then
+    if FParser.Push(Buf[I]) then       { CRC 正确才处理。 }
       HandleFrame;
   Inc(FTicks);
   if FTicks < 20 then
-    Exit;
+    Exit;                              { 未满约 1 秒，只收不发。 }
   FTicks := 0;
   if not FSeen then
   begin
     Inc(FMiss);
-    if FMiss = 2 then
+    if FMiss = 2 then                  { 大约两秒仍无应答。 }
       LogLine('两秒内没有应答。请接业务串口，115200 8N1，并确认板卡程序已运行。');
     SendSimple(HL_CMD_PING);
   end
   else
-    SendSimple(HL_CMD_SNAPSHOT);
+    SendSimple(HL_CMD_SNAPSHOT);       { 已连上后每秒要一次状态。 }
 end;
 
 procedure TMainForm.AutoAdjustLayout(AMode: TLayoutAdjustmentPolicy;
   const AFromPPI, AToPPI, AOldFormWidth, ANewFormWidth: Integer);
 begin
   inherited AutoAdjustLayout(AMode, AFromPPI, AToPPI, AOldFormWidth, ANewFormWidth);
-  if AMode = lapAutoAdjustForDPI then
+  if AMode = lapAutoAdjustForDPI then  { 只有 DPI 变化才重算，普通拉窗口不进来。 }
   begin
     ApplyDpiLayout;
     if HandleAllocated then
@@ -401,7 +405,7 @@ begin
   if FLinkText = '' then
     FLinkText := '未连接';
   if cmbBoard.ItemIndex < 0 then
-    cmbBoard.ItemIndex := 0;
+    cmbBoard.ItemIndex := 0;           { 默认“自动”。 }
   if cmbPwm.ItemIndex < 0 then
     cmbPwm.ItemIndex := 0;
   if cmbCan.ItemIndex < 0 then
@@ -409,13 +413,13 @@ begin
   ApplyDpiLayout;
   RefreshDpiStatus;
   if FStartupLogged then
-    Exit;
+    Exit;                              { 窗体再次显示时不重复建对象。 }
   FStartupLogged := True;
   FPort := TComPort.Create;
   FParser := THlParser.Create;
-  FTimer := TTimer.Create(Self);
+  FTimer := TTimer.Create(Self);       { 挂在窗体上，窗体释放时一起释放。 }
   FTimer.Interval := 50;
-  FTimer.Enabled := False;
+  FTimer.Enabled := False;             { 连接成功后才开始转。 }
   FTimer.OnTimer := @PollTimer;
   FSeq := 1;
   ReloadPorts;
@@ -431,7 +435,7 @@ procedure TMainForm.FormDestroy(Sender: TObject);
 begin
   DisconnectPort;
   FParser.Free;
-  FPort.Free;
+  FPort.Free;                          { 定时器属于窗体，这里不单独释放。 }
 end;
 
 procedure TMainForm.btnRefreshClick(Sender: TObject);
@@ -444,7 +448,7 @@ procedure TMainForm.btnConnectClick(Sender: TObject);
 begin
   if (FPort <> nil) and FPort.IsOpen then
   begin
-    DisconnectPort;
+    DisconnectPort;                    { 再按一次就是断开。 }
     LogLine('已断开。');
     Exit;
   end;
@@ -458,7 +462,7 @@ begin
     LogLine('打开 ' + cmbPort.Text + ' 失败：' + FPort.LastError);
     Exit;
   end;
-  FParser.Reset;
+  FParser.Reset;                       { 丢掉上次没收完的半帧。 }
   FSeen := False;
   FMiss := 0;
   FTicks := 0;
@@ -469,7 +473,7 @@ begin
   RefreshDpiStatus;
   FTimer.Enabled := True;
   LogLine('已打开 ' + cmbPort.Text + '，正在问候板卡。');
-  SendSimple(HL_CMD_PING);
+  SendSimple(HL_CMD_PING);             { 马上发一次，不等满 1 秒。 }
 end;
 
 procedure TMainForm.btnApplyClick(Sender: TObject);
@@ -500,9 +504,9 @@ begin
   FillChar(Msg, SizeOf(Msg), 0);
   Msg.Command := HL_CMD_SET_OUTPUTS;
   Msg.HasSetOutputs := True;
-  Msg.OutputsMask := Mask;
+  Msg.OutputsMask := Mask;             { 0 也要发出去，用来清掉全部输出。 }
   SendEnv(Msg);
-  FillChar(Msg, SizeOf(Msg), 0);
+  FillChar(Msg, SizeOf(Msg), 0);       { 每条命令单独一帧。 }
   Msg.Command := HL_CMD_SET_DAC;
   Msg.HasSetDac := True;
   Msg.DacCode := Code;
@@ -546,7 +550,7 @@ begin
   Msg.CanDlc := Byte(Length(Data));
   for I := 0 to Length(Data) - 1 do
     Msg.CanData[I] := Data[I];
-  Msg.CanReqFd := chkCanFd.Checked;
+  Msg.CanReqFd := chkCanFd.Checked;    { RX71M 收到后会回“不支持”。 }
   SendEnv(Msg);
   if chkCanFd.Checked then
     LogLine('已请求 CAN FD。RX71M 会拒绝，RA8P 会发送。')
@@ -558,7 +562,7 @@ procedure TMainForm.btnReadClick(Sender: TObject);
 begin
   if not RequireLink then
     Exit;
-  SendSimple(HL_CMD_SNAPSHOT);
+  SendSimple(HL_CMD_SNAPSHOT);         { 不等 1 秒定时器，立刻要一次状态。 }
 end;
 
 end.
