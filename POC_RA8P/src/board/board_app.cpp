@@ -28,6 +28,7 @@ void bringup(void)
     usb_open();
     eth_open();
     link_init();
+    iwdt_open(); /* 上电完成后再开始计时。 */
 }
 
 
@@ -72,6 +73,7 @@ extern "C" void board_app_run(void)
     bringup();
     for (;;)
     {
+        iwdt_refresh(); /* 先喂狗，再做本拍的串口和外设。 */
         poll_link();                     /* 命令尽量在 20 ms 内被处理。 */
         if ((phase % 25U) == 0U)
         {

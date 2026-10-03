@@ -93,6 +93,8 @@ void link_init(void);
 void poll_link(void);
 void bringup(void);
 void poll(void);
+void iwdt_open(void);    /* 启动独立看门狗，超时约 17.5 s。 */
+void iwdt_refresh(void); /* 重装计数。任务每 20 ms 调一次。 */
 
 } // namespace board
 
