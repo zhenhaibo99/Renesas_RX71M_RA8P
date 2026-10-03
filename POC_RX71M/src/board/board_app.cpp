@@ -24,6 +24,7 @@ void bringup(void)
     eth_open();
     link_init();
     iwdt_open(); /* 上电完成后再开始计时。 */
+    log_write(kLogInfo, "iwdt on");
 }
 
 

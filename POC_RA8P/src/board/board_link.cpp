@@ -95,9 +95,14 @@ void link_init(void)
 void poll_link(void)
 {
     int rx;
+    const int was_linked = g_link.linked; /* 本拍之前是否已经连上。 */
     while ((rx = sci_getc(kAppUart)) >= 0)
     {
         hl_board_push(&g_link, static_cast<uint8_t>(rx));
+    }
+    if ((was_linked == 0) && (g_link.linked != 0))
+    {
+        log_write(kLogInfo, "link up"); /* 第一次合法帧。只打这一次。 */
     }
 }
 

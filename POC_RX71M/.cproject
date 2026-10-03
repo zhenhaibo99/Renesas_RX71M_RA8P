@@ -21,7 +21,7 @@
 				<deviceConfiguration core="" device="R5F571ML" family="rx" modes="" package="DxLC"/>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" description="" id="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update.550364641" name="HardwareDebug" postbuildStep="rx-elf-objcopy ${ProjName}.elf -O ihex -I elf32-rx-be-ns ${ProjName}.hex &amp;&amp; rx-elf-objcopy ${ProjName}.elf -I elf32-rx-be-ns -O binary --gap-fill=255 -j .text -j .rvectors -j .init -j .fini -j .rodata -j .exvectors -j .fvectors ${ProjName}.bin" parent="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" description="" id="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update.550364641" name="HardwareDebug" parent="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update" postbuildStep="rx-elf-objcopy ${ProjName}.elf -O ihex -I elf32-rx-be-ns ${ProjName}.hex &amp;&amp; rx-elf-objcopy ${ProjName}.elf -I elf32-rx-be-ns -O binary --gap-fill=255 -j .text -j .rvectors -j .init -j .fini -j .rodata -j .exvectors -j .fvectors ${ProjName}.bin">
 					<folderInfo id="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update.550364641." name="/" resourcePath="">
 						<toolChain id="com.renesas.cdt.managedbuild.gcc.rx.toolchain.debug.update.633592561" name="GCC for Renesas RX" superClass="com.renesas.cdt.managedbuild.gcc.rx.toolchain.debug.update">
 							<option id="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel.1252528355" name="Optimization Level" superClass="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel" value="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel.debug" valueType="enumerated"/>
@@ -116,6 +116,70 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="com.renesas.cdt.managedbuild.gcc.rx.option.linker.cpp.archives.archiveSearchDirectories.301024769" name="Standard archive search directories (-L)" superClass="com.renesas.cdt.managedbuild.gcc.rx.option.linker.cpp.archives.archiveSearchDirectories" valueType="stringList"/>
 								<option id="com.renesas.cdt.managedbuild.gcc.core.option.linker.misc.inputsections.278279189" name="Enable garbage collection of unused input sections(-gc-sections)" superClass="com.renesas.cdt.managedbuild.gcc.core.option.linker.misc.inputsections" value="false" valueType="boolean"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.renesas.cdt.managedbuild.gcc.core.option.linker.source.linkOrderList.1873865651" name="Linkage Order List" superClass="com.renesas.cdt.managedbuild.gcc.core.option.linker.source.linkOrderList" valueType="stringList">
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_pincfg/Pin.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_clocks.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_init.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_interrupts.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_mapped_interrupts.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/vecttbl.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/dbsct.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/lowlvl.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/lowsrc.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/mcu_locks.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_common.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_cpu.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_interrupts.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_locking.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_mcu_startup.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_software_interrupt.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_rx_intrinsic_functions.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/reset_program.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/resetprg.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/sbrk.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/board/generic_rx71m/hwsetup.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_cg_hardware_setup.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_smc_cgc.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_smc_cgc_user.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_smc_interrupt.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/frtos_startup/freertos_object_init.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_adc.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_app.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_can.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_clock.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_dac.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_eth.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_gpio.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_iic.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_link.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_log.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_pins.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_pwm.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_sci.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_spi.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_state.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_usb.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_util.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_wdt.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/application/startup/freertos_helper.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/application/startup/freertos_user_port.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/portable/MemMang/heap_4.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/portable/GCC/RX600v2/port.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/croutine.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/event_groups.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/list.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/queue.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/stream_buffer.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/tasks.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/timers.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/POC_RX71M.o&quot;"/>
+								</option>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.renesas.cdt.managedbuild.gcc.core.option.linker.archives.archiveLibraryFiles.1063268109" name="Standard archive (library) files (-l)" superClass="com.renesas.cdt.managedbuild.gcc.core.option.linker.archives.archiveLibraryFiles" valueType="stringList">
+									<listOptionValue builtIn="false" value="m"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="gcc"/>
+									<listOptionValue builtIn="false" value="stdc++"/>
+								</option>
 							</tool>
 							<tool id="com.renesas.cdt.managedbuild.gcc.rx.tool.objcopy.561178789" name="Objcopy" superClass="com.renesas.cdt.managedbuild.gcc.rx.tool.objcopy"/>
 							<tool id="com.renesas.cdt.managedbuild.gcc.rx.tool.archiver.552066586" name="Archiver" superClass="com.renesas.cdt.managedbuild.gcc.rx.tool.archiver"/>
@@ -151,7 +215,7 @@
 				<deviceConfiguration core="" device="R5F571ML" family="rx" modes="" package="DxLC"/>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" description="" id="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update.1661037206" name="Debug" postbuildStep="rx-elf-objcopy ${ProjName}.elf -O ihex -I elf32-rx-be-ns ${ProjName}.hex &amp;&amp; rx-elf-objcopy ${ProjName}.elf -I elf32-rx-be-ns -O binary --gap-fill=255 -j .text -j .rvectors -j .init -j .fini -j .rodata -j .exvectors -j .fvectors ${ProjName}.bin" parent="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" description="" id="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update.1661037206" name="Debug" parent="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update" postbuildStep="rx-elf-objcopy ${ProjName}.elf -O ihex -I elf32-rx-be-ns ${ProjName}.hex &amp;&amp; rx-elf-objcopy ${ProjName}.elf -I elf32-rx-be-ns -O binary --gap-fill=255 -j .text -j .rvectors -j .init -j .fini -j .rodata -j .exvectors -j .fvectors ${ProjName}.bin">
 					<folderInfo id="com.renesas.cdt.managedbuild.gcc.rx.configuration.debug.update.1661037206." name="/" resourcePath="">
 						<toolChain id="com.renesas.cdt.managedbuild.gcc.rx.toolchain.debug.update.1603259433" name="GCC for Renesas RX" superClass="com.renesas.cdt.managedbuild.gcc.rx.toolchain.debug.update">
 							<option id="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel.932598515" name="Optimization Level" superClass="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel" value="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel.debug" valueType="enumerated"/>
@@ -246,6 +310,70 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="com.renesas.cdt.managedbuild.gcc.rx.option.linker.cpp.archives.archiveSearchDirectories.843454927" name="Standard archive search directories (-L)" superClass="com.renesas.cdt.managedbuild.gcc.rx.option.linker.cpp.archives.archiveSearchDirectories" valueType="stringList"/>
 								<option id="com.renesas.cdt.managedbuild.gcc.core.option.linker.misc.inputsections.627747241" name="Enable garbage collection of unused input sections(-gc-sections)" superClass="com.renesas.cdt.managedbuild.gcc.core.option.linker.misc.inputsections" value="true" valueType="boolean"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.renesas.cdt.managedbuild.gcc.core.option.linker.source.linkOrderList.722889696" name="Linkage Order List" superClass="com.renesas.cdt.managedbuild.gcc.core.option.linker.source.linkOrderList" valueType="stringList">
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_pincfg/Pin.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_clocks.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_init.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_interrupts.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/mcu_mapped_interrupts.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/rx71m/vecttbl.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/dbsct.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/lowlvl.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/lowsrc.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/mcu_locks.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_common.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_cpu.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_interrupts.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_locking.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_mcu_startup.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_bsp_software_interrupt.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/r_rx_intrinsic_functions.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/reset_program.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/resetprg.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/mcu/all/sbrk.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/r_bsp/board/generic_rx71m/hwsetup.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_cg_hardware_setup.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_smc_cgc.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_smc_cgc_user.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/smc_gen/general/r_smc_interrupt.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/frtos_startup/freertos_object_init.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_adc.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_app.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_can.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_clock.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_dac.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_eth.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_gpio.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_iic.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_link.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_log.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_pins.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_pwm.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_sci.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_spi.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_state.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_usb.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_util.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/board/board_wdt.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/application/startup/freertos_helper.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/application/startup/freertos_user_port.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/portable/MemMang/heap_4.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/portable/GCC/RX600v2/port.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/croutine.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/event_groups.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/list.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/queue.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/stream_buffer.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/tasks.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/FreeRTOS/Source/timers.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;src/POC_RX71M.o&quot;"/>
+								</option>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.renesas.cdt.managedbuild.gcc.core.option.linker.archives.archiveLibraryFiles.162560968" name="Standard archive (library) files (-l)" superClass="com.renesas.cdt.managedbuild.gcc.core.option.linker.archives.archiveLibraryFiles" valueType="stringList">
+									<listOptionValue builtIn="false" value="m"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="gcc"/>
+									<listOptionValue builtIn="false" value="stdc++"/>
+								</option>
 							</tool>
 							<tool id="com.renesas.cdt.managedbuild.gcc.rx.tool.objcopy.1834195493" name="Objcopy" superClass="com.renesas.cdt.managedbuild.gcc.rx.tool.objcopy"/>
 							<tool id="com.renesas.cdt.managedbuild.gcc.rx.tool.archiver.137464395" name="Archiver" superClass="com.renesas.cdt.managedbuild.gcc.rx.tool.archiver"/>
@@ -281,7 +409,7 @@
 				<deviceConfiguration core="" device="R5F571ML" family="rx" modes="" package="DxLC"/>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" description="" id="com.renesas.cdt.managedbuild.gcc.rx.configuration.release.update.525053764" name="Release" postbuildStep="rx-elf-objcopy ${ProjName}.elf -O ihex -I elf32-rx-be-ns ${ProjName}.hex &amp;&amp; rx-elf-objcopy ${ProjName}.elf -I elf32-rx-be-ns -O binary --gap-fill=255 -j .text -j .rvectors -j .init -j .fini -j .rodata -j .exvectors -j .fvectors ${ProjName}.bin" parent="com.renesas.cdt.managedbuild.gcc.rx.configuration.release.update">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" description="" id="com.renesas.cdt.managedbuild.gcc.rx.configuration.release.update.525053764" name="Release" parent="com.renesas.cdt.managedbuild.gcc.rx.configuration.release.update" postbuildStep="rx-elf-objcopy ${ProjName}.elf -O ihex -I elf32-rx-be-ns ${ProjName}.hex &amp;&amp; rx-elf-objcopy ${ProjName}.elf -I elf32-rx-be-ns -O binary --gap-fill=255 -j .text -j .rvectors -j .init -j .fini -j .rodata -j .exvectors -j .fvectors ${ProjName}.bin">
 					<folderInfo id="com.renesas.cdt.managedbuild.gcc.rx.configuration.release.update.525053764." name="/" resourcePath="">
 						<toolChain id="com.renesas.cdt.managedbuild.gcc.rx.toolchain.release.update.682990152" name="GCC for Renesas RX" superClass="com.renesas.cdt.managedbuild.gcc.rx.toolchain.release.update">
 							<option id="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel.1715963657" name="Optimization Level" superClass="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel" value="com.renesas.cdt.managedbuild.gcc.core.option.optimization.optimizationLevel.debug" valueType="enumerated"/>
@@ -426,4 +554,6 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>

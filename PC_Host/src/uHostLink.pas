@@ -87,6 +87,7 @@ type
     Seq: Byte;                 { 序号低 8 位。 }
     Len: Word;
     Payload: array[0..HL_MAX_PAYLOAD - 1] of Byte;
+    DropReason: string;        { 最近一次丢掉的原因。空表示没有。 }
     constructor Create;
     procedure Reset;
     function Push(Value: Byte): Boolean; { 凑齐且 CRC 正确时返回 True。 }
@@ -781,6 +782,7 @@ begin
       begin
         if Value <> HL_VERSION then
         begin
+          DropReason := Format('帧版本 %u，不是 %u。', [Value, HL_VERSION]);
           FState := 0;
           if Value = HL_MAGIC0 then
             FState := 1;        { 版本不对，这个字节若是 0xA5 就重新同步。 }
@@ -820,6 +822,7 @@ begin
         FGot := 0;
         if Len > HL_MAX_PAYLOAD then
         begin
+          DropReason := Format('载荷 %u 字节，超过 %u。', [Len, HL_MAX_PAYLOAD]);
           FState := 0;
           if Value = HL_MAGIC0 then
             FState := 1;
@@ -851,6 +854,8 @@ begin
         FState := 0;            { 无论对错都回到找下一帧。 }
         FGot := 0;
         Result := Got = Crc;
+        if not Result then
+          DropReason := Format('CRC 期望 $%04x，收到 $%04x，载荷 %u 字节。', [Crc, Got, Len]);
       end;
   else
     FState := 0;
@@ -949,6 +954,20 @@ begin
     HL_BOARD_RA8P: Result := 'RA8P';
   else
     Result := '未知板';
+  end;
+end;
+
+function HlCommandName(Command: Cardinal): string;
+begin
+  case Command of
+    HL_CMD_PING: Result := 'PING';
+    HL_CMD_SNAPSHOT: Result := 'SNAPSHOT';
+    HL_CMD_SET_OUTPUTS: Result := 'SET_OUTPUTS';
+    HL_CMD_SET_DAC: Result := 'SET_DAC';
+    HL_CMD_SET_PWM: Result := 'SET_PWM';
+    HL_CMD_SEND_CAN: Result := 'SEND_CAN';
+  else
+    Result := Format('CMD_%u', [Command]);
   end;
 end;
 

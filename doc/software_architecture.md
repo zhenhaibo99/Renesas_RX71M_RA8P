@@ -303,7 +303,7 @@ sequenceDiagram
 | 软件模块 | 当前行为 |
 |---|---|
 | 业务 UART | HL1 帧。RX 为 SCI2，RA 为 SCI7 |
-| 日志 UART | 文本行：tick、两路 AD、输入掩码 |
+| 日志 UART | 周期状态行，以及 log_write 的级别文本。不走业务口 |
 | GPIO | 四路输入、四路输出。输出可由上位机按掩码改写 |
 | ADC | 两路采样，放进 Snapshot |
 | DAC | 12 位，可由上位机改写 |

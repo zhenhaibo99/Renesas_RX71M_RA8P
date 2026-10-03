@@ -82,6 +82,12 @@ void usb_open(void);
 void eth_open(void);
 void hex4(char * dst, uint16_t value);
 void hex2(char * dst, uint8_t value);
+constexpr uint8_t kLogError = 0U; /* 故障。始终建议打出。 */
+constexpr uint8_t kLogWarn = 1U;  /* 警告。 */
+constexpr uint8_t kLogInfo = 2U;  /* 信息。默认级别。 */
+constexpr uint8_t kLogDebug = 3U; /* 调试。默认被滤掉。 */
+void log_set_level(uint8_t level);          /* 运行中改过滤级别。 */
+void log_write(uint8_t level, const char * text); /* 日志口一行。不进业务口。 */
 void log_line(void);
 extern "C" void rx_write(void * ctx, const uint8_t * data, uint16_t len);
 extern "C" void rx_outputs(void * ctx, uint8_t mask);
